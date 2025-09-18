@@ -1,0 +1,37 @@
+
+project_id = "thezceodkcmkrjprtcjj"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[auth]
+enabled = true
+port = 54324
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://localhost:3000"]
+jwt_expiry = 3600
+jwt_secret = "super-secret-jwt-token-with-at-least-32-characters-long"
+password_min_length = 6
+
+[db]
+port = 54322
+
+[storage]
+enabled = true
+port = 54323
+
+[functions.document-webhook]
+verify_jwt = false
+
+[functions.document-deletion-webhook]
+verify_jwt = false
+
+[functions.material-webhook]
+verify_jwt = false
+
+[functions.material-deletion-webhook]
+verify_jwt = false
