@@ -63,7 +63,7 @@ const Auth = () => {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <h2 className="text-2xl font-bold">VeloSight</h2>
+          <h2 className="text-2xl font-bold">VeloSight - Beta</h2>
           <p className="text-sm text-muted-foreground mt-1">powered by FIDERE</p>
         </div>
 
@@ -120,7 +120,7 @@ const Auth = () => {
                 />
 
                 <div className="text-sm text-muted-foreground">
-                  <p>Need an account? Contact your administrator.</p>
+                  <p>Need an account? Reach out to hello@fidere.au</p>
                 </div>
               </CardContent>
 
