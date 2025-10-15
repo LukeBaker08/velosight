@@ -85,15 +85,26 @@ const Projects = () => {
     }
   };
 
-  /**
-   * Formats date string to user-friendly format
-   * @param dateString - ISO date string to format
-   * @returns Formatted date string (e.g., "Jan 15, 2024")
-   */
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  };
+/**
+ * Formats date/datetime string to user-friendly date
+ * Accepts ISO and Postgres-style timestamps
+ */
+const formatDate = (dateString: string): string => {
+  if (!dateString) return '';
+
+  // Normalise "YYYY-MM-DD HH:mm:ss+00" → "YYYY-MM-DDTHH:mm:ss+00"
+  const normalised = dateString.replace(' ', 'T');
+
+  const date = new Date(normalised);
+  if (isNaN(date.getTime())) return '';
+
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+};
+
 
   /**
    * Handles table column sorting by toggling sort order or changing sort field
@@ -307,7 +318,7 @@ const Projects = () => {
                       </Badge>
                     </TableCell>
                     <TableCell className="capitalize">{project.stage || 'N/A'}</TableCell>
-                    <TableCell>{formatDate(project.lastUpdated)}</TableCell>
+                    <TableCell>{formatDate(project.updated_at)}</TableCell>
                   </TableRow>
                 ))
               )}

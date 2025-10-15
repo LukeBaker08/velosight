@@ -41,14 +41,14 @@ const Navbar = () => {
             <Link to="/" className="flex flex-col items-start">
               <div className="flex items-center gap-1">
                 <span className="font-semibold text-xl tracking-tight">VeloSight</span>
-                <span className="bg-primary text-primary-foreground text-[10px] px-1.5 py-0.5 rounded-md font-medium">ALPHA</span>
+                <span className="bg-red-400 text-primary-foreground text-[10px] px-1.5 py-0.5 rounded-md font-medium">BETA</span>
               </div>
               <div className="flex items-center gap-1">
                 <span className="text-[10px] text-muted-foreground">powered by</span>
                 <img 
-                  src="/lovable-uploads/32ffcb61-b8d7-4e98-846c-0ac6396790ea.png" 
+                  src="/uploads/4ddcfa0a-f089-400d-ac5c-8752173b4024.png" 
                   alt="FIDERE" 
-                  className="h-3"
+                  className="h-8"
                 />
               </div>
             </Link>

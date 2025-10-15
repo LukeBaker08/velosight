@@ -1,4 +1,5 @@
 
+
 -- Insert the dropdown category for Gateway Review types
 INSERT INTO public.dropdown_categories (id, name, description) 
 VALUES (gen_random_uuid(), 'gateway_review_types', 'Types of Gateway Reviews available for analysis')

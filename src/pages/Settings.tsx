@@ -32,9 +32,9 @@ interface AppUser {
 }
 
 const Settings = () => {
-  const { user, isAdmin } = useAuth();
+  const { user /*, isAdmin */} = useAuth();
+  const functionsUrl = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL;  
   const { categories, isLoading, error, updateCategoryValues, refetch } = useAllDropdownCategories();
-  
   const [users, setUsers] = useState<AppUser[]>([]);
   const [isUserLoading, setIsUserLoading] = useState(true);
   const [isSystemLoading, setIsSystemLoading] = useState(true);
@@ -46,14 +46,14 @@ const Settings = () => {
         setIsUserLoading(true);
         console.log('Settings: Starting user fetch...');
         console.log('Settings: Current user:', user?.email);
-        console.log('Settings: Is admin:', isAdmin);
+        //console.log('Settings: Is admin:', isAdmin);
         
         // Only admins can fetch users
-        if (!user || !isAdmin) {
-          console.log('Settings: User is not admin, skipping user fetch');
-          setIsUserLoading(false);
-          return;
-        }
+//        if (!user || !isAdmin) {
+//          console.log('Settings: User is not admin, skipping user fetch');
+//          setIsUserLoading(false);
+//          return;
+//        }
         
         // Get the current session token
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -72,7 +72,7 @@ const Settings = () => {
         console.log('Settings: Attempting to fetch users via edge function');
         
         // Call the edge function with authorization header
-        const response = await fetch(`https://thezceodkcmkrjprtcjj.supabase.co/functions/v1/list-users`, {
+        const response = await fetch(`${functionsUrl}/list-users`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${session.access_token}`,
@@ -138,24 +138,24 @@ const Settings = () => {
     };
 
     fetchUsers();
-  }, [user, isAdmin]);
+  }, [user /*, isAdmin*/]);
 
   // Check if current user has admin access
-  if (!isAdmin) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center h-64">
-          <Card>
-            <CardContent className="pt-6">
-              <p className="text-center text-muted-foreground">
-                You don't have permission to access the settings panel.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      </Layout>
-    );
-  }
+  //if (!isAdmin) {
+  //  return (
+  //    <Layout>
+  //      <div className="flex items-center justify-center h-64">
+  //        <Card>
+  //          <CardContent className="pt-6">
+  //            <p className="text-center text-muted-foreground">
+  //              You don't have permission to access the settings panel.
+  //            </p>
+  //          </CardContent>
+  //        </Card>
+  //      </div>
+  //    </Layout>
+  //  );
+  //}
 
   return (
     <Layout>
@@ -190,7 +190,7 @@ const Settings = () => {
                 </div>
                 <div>
                   <label className="text-sm font-medium">Role</label>
-                  <p className="text-sm text-muted-foreground">{isAdmin ? 'Administrator' : 'User'}</p>
+                  <p className="text-sm text-muted-foreground">User</p>
                 </div>
               </CardContent>
             </Card>
@@ -529,7 +529,7 @@ const Settings = () => {
                 <div className="space-y-4">
                   <div>
                     <label className="text-sm font-medium">Application Version</label>
-                    <p className="text-sm text-muted-foreground">VeloSight Alpha</p>
+                    <p className="text-sm text-muted-foreground">VeloSight Beta</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium">Database Status</label>

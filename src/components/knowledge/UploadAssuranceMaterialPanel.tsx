@@ -36,7 +36,7 @@ const UploadAssuranceMaterialPanel: React.FC<UploadAssuranceMaterialPanelProps> 
   const [category, setCategory] = useState(existingMaterial?.type || '');
   const [content, setContent] = useState(existingMaterial?.content || '');
   const [contentType, setContentType] = useState<'file' | 'text'>(
-    existingMaterial?.file_path ? 'file' : 'text'
+    existingMaterial?.file_path ? 'file' : 'file'
   );
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);

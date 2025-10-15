@@ -4,7 +4,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { validateFile } from './validators';
-import { handleError, ValidationError, NetworkError } from './errors';
+import { handleError, NetworkError } from './errors';
 import { documentWebhooks, materialWebhooks } from './webhooks';
 
 export interface UploadOptions {
@@ -19,47 +19,56 @@ export interface UploadResult {
   publicUrl?: string;
 }
 
+interface DocumentWebhookData {
+  name: string;
+  type: string;
+  category: string;
+  uploader_id: string;
+  filename: string;
+  file: File;
+}
+
+interface MaterialWebhookData {
+  title: string;
+  type: string;
+  uploader_id: string;
+  filename: string;
+  file?: File;
+}
+
 /**
  * Upload file to Supabase storage with validation and progress tracking
  */
+
 export const uploadFile = async (
   file: File,
   options: UploadOptions
 ): Promise<UploadResult> => {
   try {
-    // Validate file before upload
     validateFile(file);
 
     const { bucket, folder = '', filename } = options;
     const finalFilename = filename || `${Date.now()}-${file.name}`;
     const filePath = folder ? `${folder}/${finalFilename}` : finalFilename;
 
-    // Upload to Supabase storage
     const { data, error } = await supabase.storage
       .from(bucket)
       .upload(filePath, file, {
         cacheControl: '3600',
-        upsert: false
+        upsert: false,
       });
 
     if (error) {
       throw new NetworkError(`Upload failed: ${error.message}`);
     }
 
-    // Get public URL if bucket is public
     let publicUrl: string | undefined;
     if (bucket === 'materials') {
-      const { data: urlData } = supabase.storage
-        .from(bucket)
-        .getPublicUrl(data.path);
+      const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(data.path);
       publicUrl = urlData.publicUrl;
     }
 
-    return {
-      path: data.path,
-      publicUrl
-    };
-
+    return { path: data.path, publicUrl };
   } catch (error) {
     throw new Error(handleError(error, 'File upload'));
   }
@@ -68,11 +77,10 @@ export const uploadFile = async (
 /**
  * Download file from Supabase storage
  */
+
 export const downloadFile = async (bucket: string, path: string): Promise<Blob> => {
   try {
-    const { data, error } = await supabase.storage
-      .from(bucket)
-      .download(path);
+    const { data, error } = await supabase.storage.from(bucket).download(path);
 
     if (error) {
       throw new NetworkError(`Download failed: ${error.message}`);
@@ -87,11 +95,10 @@ export const downloadFile = async (bucket: string, path: string): Promise<Blob> 
 /**
  * Delete file from Supabase storage
  */
+
 export const deleteFile = async (bucket: string, path: string): Promise<void> => {
   try {
-    const { error } = await supabase.storage
-      .from(bucket)
-      .remove([path]);
+    const { error } = await supabase.storage.from(bucket).remove([path]);
 
     if (error) {
       throw new NetworkError(`Delete failed: ${error.message}`);
@@ -101,9 +108,10 @@ export const deleteFile = async (bucket: string, path: string): Promise<void> =>
   }
 };
 
-/**
- * Complete document upload process with webhook notification
- */
+/*=============================
+Complete document upload process with webhook notification
+=============================*/
+
 export const uploadDocument = async (
   file: File,
   projectId: string,
@@ -118,16 +126,14 @@ export const uploadDocument = async (
   try {
     onProgress?.(10);
 
-    // Upload file to storage
     const uploadResult = await uploadFile(file, {
       bucket: 'documents',
       folder: projectId,
-      onProgress: (progress) => onProgress?.(10 + progress * 0.6)
+      onProgress: (progress) => onProgress?.(10 + progress * 0.6),
     });
 
     onProgress?.(70);
 
-    // Save document metadata to database
     const { data: document, error: dbError } = await supabase
       .from('documents')
       .insert({
@@ -139,22 +145,27 @@ export const uploadDocument = async (
       .single();
 
     if (dbError) {
-      // Clean up uploaded file if database insert fails
       await deleteFile('documents', uploadResult.path).catch(() => {});
       throw new NetworkError(`Database error: ${dbError.message}`);
     }
 
     onProgress?.(85);
 
-    // Trigger webhook for document processing
-    const webhookResult = await documentWebhooks.upload(projectId, document.id);
+    const webhookResult = await documentWebhooks.upload(projectId, document.id, {
+      name: documentData.name,
+      type: documentData.type,
+      category: documentData.category,
+      uploader_id: documentData.uploader_id,
+      filename: file.name,
+      file,
+    });
+
     if (!webhookResult.success) {
-      console.warn('Document webhook failed:', webhookResult.error);
+      console.warn('Document upload webhook failed:', webhookResult.error);
     }
 
     onProgress?.(100);
     return document.id;
-
   } catch (error) {
     throw new Error(handleError(error, 'Document upload'));
   }
@@ -178,18 +189,16 @@ export const uploadMaterial = async (
 
     let filePath: string | null = null;
 
-    // Upload file if provided
     if (file) {
       const uploadResult = await uploadFile(file, {
         bucket: 'materials',
-        onProgress: (progress) => onProgress?.(10 + progress * 0.6)
+        onProgress: (progress) => onProgress?.(10 + progress * 0.6),
       });
       filePath = uploadResult.path;
     }
 
     onProgress?.(70);
 
-    // Save material metadata to database
     const { data: material, error: dbError } = await supabase
       .from('framework_materials')
       .insert({
@@ -200,7 +209,6 @@ export const uploadMaterial = async (
       .single();
 
     if (dbError) {
-      // Clean up uploaded file if database insert fails
       if (filePath) {
         await deleteFile('materials', filePath).catch(() => {});
       }
@@ -209,15 +217,20 @@ export const uploadMaterial = async (
 
     onProgress?.(85);
 
-    // Trigger webhook for material processing
-    const webhookResult = await materialWebhooks.upload(material.id);
+    const webhookResult = await materialWebhooks.upload(material.id, {
+      title: materialData.title,
+      type: materialData.type,
+      uploader_id: materialData.uploader_id,
+      filename: file ? file.name : '',
+      file: file ?? undefined,
+    });
+
     if (!webhookResult.success) {
       console.warn('Material webhook failed:', webhookResult.error);
     }
 
     onProgress?.(100);
     return material.id;
-
   } catch (error) {
     throw new Error(handleError(error, 'Material upload'));
   }
@@ -228,7 +241,6 @@ export const uploadMaterial = async (
  */
 export const deleteDocument = async (documentId: string): Promise<void> => {
   try {
-    // Get document info
     const { data: document, error: fetchError } = await supabase
       .from('documents')
       .select('file_path, project_id')
@@ -239,27 +251,19 @@ export const deleteDocument = async (documentId: string): Promise<void> => {
       throw new NetworkError(`Failed to fetch document: ${fetchError.message}`);
     }
 
-    // Delete from database
-    const { error: dbError } = await supabase
-      .from('documents')
-      .delete()
-      .eq('id', documentId);
-
+    const { error: dbError } = await supabase.from('documents').delete().eq('id', documentId);
     if (dbError) {
       throw new NetworkError(`Database error: ${dbError.message}`);
     }
 
-    // Delete file from storage
     if (document.file_path) {
       await deleteFile('documents', document.file_path);
     }
 
-    // Trigger webhook
     const webhookResult = await documentWebhooks.delete(document.project_id, documentId);
     if (!webhookResult.success) {
       console.warn('Document deletion webhook failed:', webhookResult.error);
     }
-
   } catch (error) {
     throw new Error(handleError(error, 'Document deletion'));
   }
@@ -270,7 +274,6 @@ export const deleteDocument = async (documentId: string): Promise<void> => {
  */
 export const deleteMaterial = async (materialId: string): Promise<void> => {
   try {
-    // Get material info
     const { data: material, error: fetchError } = await supabase
       .from('framework_materials')
       .select('file_path')
@@ -281,27 +284,19 @@ export const deleteMaterial = async (materialId: string): Promise<void> => {
       throw new NetworkError(`Failed to fetch material: ${fetchError.message}`);
     }
 
-    // Delete from database
-    const { error: dbError } = await supabase
-      .from('framework_materials')
-      .delete()
-      .eq('id', materialId);
-
+    const { error: dbError } = await supabase.from('framework_materials').delete().eq('id', materialId);
     if (dbError) {
       throw new NetworkError(`Database error: ${dbError.message}`);
     }
 
-    // Delete file from storage
     if (material.file_path) {
       await deleteFile('materials', material.file_path);
     }
 
-    // Trigger webhook
     const webhookResult = await materialWebhooks.delete(materialId);
     if (!webhookResult.success) {
       console.warn('Material deletion webhook failed:', webhookResult.error);
     }
-
   } catch (error) {
     throw new Error(handleError(error, 'Material deletion'));
   }

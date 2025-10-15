@@ -1,192 +1,149 @@
-# VeloSight - Project Delivery Confidence Platform
+# VeloSight – Project Delivery Confidence Platform
 
-## 📋 Overview
+## 🚀 Overview
+VeloSight is a modern project management and delivery confidence platform. It empowers organizations to track, analyze, and improve project outcomes using advanced analytics, AI-powered insights, and a robust knowledge repository.
 
-VeloSight is a comprehensive project management and delivery confidence assessment platform designed to help organizations track, analyze, and improve their project delivery capabilities through advanced analytics and AI-powered insights.
+---
 
-## 🏗️ Architecture
+## 🧩 Features
+- **Project Management**: Create, update, and manage projects with document upload, categorization, and real-time status tracking.
+- **AI-Driven Analysis**: Delivery confidence predictions, risk assessments, gateway reviews, and custom analysis.
+- **Knowledge Repository**: Centralized library for assurance materials, best practices, and templates.
+- **User Management**: Role-based access (Admin/User), secure authentication, and user activity tracking.
+- **Reusable UI Library**: Consistent, accessible components for rapid development.
+- **Performance & Security**: Built-in monitoring, validation, and error handling.
 
-### Technology Stack
+---
 
-- **Frontend**: React 18 + TypeScript + Vite
-- **Styling**: Tailwind CSS + shadcn/ui components
-- **Backend**: Supabase (PostgreSQL + Edge Functions)
-- **Authentication**: Supabase Auth
-- **File Storage**: Supabase Storage
-- **State Management**: React Query + Context API
+## 🏗️ Tech Stack
+| Layer         | Technology                                 |
+|--------------|---------------------------------------------|
+| Frontend     | React 18, TypeScript, Vite                  |
+| Styling      | Tailwind CSS, shadcn/ui                     |
+| Backend      | Supabase (PostgreSQL, Edge Functions)       |
+| Auth         | Supabase Auth                               |
+| Storage      | Supabase Storage                            |
+| State Mgmt   | React Query, Context API                    |
 
-### Project Structure
+---
 
-```
+## 📁 Project Structure
 src/
-├── components/          # Reusable UI components
-│   ├── ui/             # Base UI components (shadcn)
-│   ├── project/        # Project-specific components
-│   ├── reports/        # Report-related components
-│   └── knowledge/      # Knowledge repository components
-├── lib/                # Core utilities and business logic
-│   ├── constants.ts    # Application constants
-│   ├── errors.ts       # Error handling utilities
-│   ├── validators.ts   # Input validation
-│   ├── webhooks.ts     # Webhook management
-│   ├── file-operations.ts  # File upload/download
-│   ├── analysis.ts     # Analysis utilities
-│   ├── project-service.ts  # Project CRUD operations
-│   ├── config.ts       # Configuration management
-│   └── performance.ts  # Performance monitoring
-├── pages/              # Page components
-├── context/            # React contexts
-├── hooks/              # Custom React hooks
-├── utils/              # Legacy utilities (being phased out)
-└── types/              # TypeScript type definitions
+  components/    # UI, project, reports, knowledge, ui/
+  lib/           # Core utilities: analysis, config, errors, file-operations, performance, validators, webhooks
+  pages/         # Route-level components
+  context/       # React contexts
+  hooks/         # Custom React hooks
+  services/      # Project & webhook services
+  types/         # TypeScript types
+  utils/         # Utilities (date, file ops)
+supabase/
+  functions/     # Edge functions (webhooks, user mgmt)
+  migrations/    # Database migrations
+public/          # Static assets
 ```
 
-## 🚀 Development Setup
+### Directory & File Purpose
 
-### Prerequisites
+| Path                        | Purpose                                                                                 |
+|-----------------------------|-----------------------------------------------------------------------------------------|
+| `src/components/`           | Main UI components, grouped by feature (see below)                                       |
+| `src/components/ui/`        | Base UI primitives (buttons, dialogs, cards, etc. – shadcn/ui)                           |
+| `src/components/project/`   | Project-specific UI (cards, modals, dashboards)                                         |
+| `src/components/reports/`   | Reporting and analytics UI components                                                    |
+| `src/components/knowledge/` | Knowledge repository UI (assurance materials, prompt library, uploads)                   |
+| `src/context/`              | React context providers (e.g., authentication, global state)                             |
+| `src/hooks/`                | Custom React hooks for state, UI, and data fetching                                      |
+| `src/lib/`                  | Core business logic and utilities (see below for details)                                |
+| `src/lib/analysis.ts`       | Project analysis and AI logic                                                            |
+| `src/lib/config.ts`         | Centralized configuration                                                                |
+| `src/lib/errors.ts`         | Error handling and reporting utilities                                                   |
+| `src/lib/file-operations.ts`| File upload/download logic                                                               |
+| `src/lib/performance.ts`    | Performance monitoring and metrics                                                       |
+| `src/lib/project-service.ts`| Project CRUD and data access                                                             |
+| `src/lib/validators.ts`     | Input validation and sanitization                                                        |
+| `src/lib/webhooks.ts`       | Webhook management and integration                                                       |
+| `src/pages/`                | Top-level route components (e.g., Auth, FAQ, Project, Settings, Support, NotFound)       |
+| `src/services/`             | Service layer for API and backend integration (e.g., projectService, webhookService)     |
+| `src/types/`                | TypeScript type definitions (e.g., project types)                                        |
+| `src/utils/`                | Utility functions (date formatting, file operations)                                     |
+| `src/integrations/`         | Third-party integrations (e.g., Supabase client setup)                                   |
+| `public/`                   | Static assets (images, uploads, favicon, etc.)                                           |
+| `supabase/functions/`       | Supabase Edge Functions (webhooks, user management, document/material automation)        |
+| `supabase/migrations/`      | Database migration scripts                                                               |
 
-- Node.js 18+ 
-- npm/yarn/bun
+#### Notable Subfolders in `components/`
+- `ui/` – All base UI primitives (shadcn/ui)
+- `project/` – Project dashboards, cards, and modals
+- `reports/` – Analytics and reporting UIs
+- `knowledge/` – Knowledge base, assurance materials, prompt library
 
-### Installation
+#### Notable Files in `lib/`
+- `analysis.ts` – AI and analytics logic
+- `config.ts` – App configuration
+- `errors.ts` – Centralized error handling
+- `file-operations.ts` – File upload/download
+- `performance.ts` – Performance tracking
+- `project-service.ts` – Project CRUD
+- `validators.ts` – Input validation
+- `webhooks.ts` – Webhook logic
 
-```bash
-# Clone the repository
-git clone <repository-url>
-cd velosight
+---
 
-# Install dependencies
-npm install
+## ⚡ Getting Started
+1. **Clone the repository**
+   ```sh
+   git clone <repository-url>
+   cd velosight
+   ```
+2. **Install dependencies**
+   ```sh
+   npm install
+   # or: pnpm install | yarn install | bun install
+   ```
+3. **Start the development server**
+   ```sh
+   npm run dev
+   ```
+4. **Supabase Setup**
+   - Supabase credentials are embedded for basic use.
+   - For production, configure secrets in `src/lib/config.ts` or use environment variables as needed.
 
-# Start development server
-npm run dev
-```
+---
 
-### Environment Configuration
+## 🛠️ Development
+- **Scripts**: `npm run dev`, `npm run build`, `npm run lint`
+- **Component Library**: See `src/components/ui/` for reusable UI elements (InfoCard, ConfirmDialog, LoadingSpinner, etc.)
+- **Edge Functions**: See `supabase/functions/` for webhooks and automation.
+- **Testing**: (Add your test strategy here if applicable)
 
-The application uses centralized configuration in `src/lib/config.ts`. No environment variables are required for basic operation as Supabase credentials are embedded.
+---
 
-## 📚 Core Features
+## 🔒 Security & Best Practices
+- Input validation and sanitization (`src/lib/validators.ts`)
+- Supabase Auth with JWT, RLS policies
+- Centralized error handling (`src/lib/errors.ts`)
+- File upload restrictions (type, size)
+- Performance monitoring (`src/lib/performance.ts`)
 
-### 1. Project Management
-- Create, update, and manage projects
-- Document upload and categorization
-- Real-time project metrics and status tracking
-
-### 2. Analysis & Reports
-- **Delivery Confidence Assessment**: AI-powered project delivery predictions
-- **Risk Assessment**: Comprehensive risk analysis and mitigation strategies  
-- **Gateway Reviews**: Stage-gate review automation
-- **Hypothesis Generation**: Data-driven hypothesis creation
-- **Custom Analysis**: Flexible analysis framework
-
-### 3. Knowledge Repository
-- Centralized assurance materials library
-- Best practices and templates
-- Organizational knowledge management
-
-### 4. User Management
-- Role-based access control (Admin, User, Authenticated)
-- Secure authentication with Supabase Auth
-- User activity tracking
-
-## 🛠️ Component Library
-
-### Reusable UI Components
-
-- **InfoCard**: Standardized information display cards
-- **ConfirmDialog**: Consistent confirmation dialogs
-- **LoadingSpinner**: Loading states with performance tracking
-- **ErrorBoundary**: Graceful error handling
-- **EnhancedLoading**: Smart loading states with skeletons
-
-## 🔐 Security
-
-### Input Validation
-- All user inputs are validated using `src/lib/validators.ts`
-- Automatic sanitization prevents XSS attacks
-- File upload validation with type and size restrictions
-
-### Authentication & Authorization
-- Supabase Auth with JWT tokens
-- Row Level Security (RLS) policies on all database tables
-- Role-based access control throughout the application
-
-### Error Handling
-- Centralized error handling with `src/lib/errors.ts`
-- Sensitive information filtering in production
-- Comprehensive logging for debugging
-
-## 📊 Performance
-
-### Monitoring
-- Performance tracking with `src/lib/performance.ts`
-- Component render time monitoring (development)
-- API call duration tracking
-- User action analytics
-
-### Optimization Features
-- Lazy loading for route components
-- React Query for efficient data fetching
-- Image optimization for uploads
-- Progressive loading states
+---
 
 ## 🚀 Deployment
-
-### Production Build
-```bash
-npm run build
-```
-
-### Deployment Platforms
-- **Recommended**: Vercel, Netlify, or similar static hosting
-- **Requirements**: Node.js 18+ environment
-- **Environment**: All configuration is embedded, no environment variables needed
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-#### Upload Failures
-- Check file size (max 10MB)
-- Verify file type is supported
-- Ensure stable internet connection
-
-#### Authentication Issues
-- Clear browser cache and cookies
-- Try incognito/private browsing mode
-- Verify network connectivity
-
-#### Performance Issues
-- Check Network tab in browser DevTools
-- Disable browser extensions
-- Try different browser
-
-### Debug Mode
-Development builds include additional debugging:
-- Performance metrics in console
-- Detailed error messages
-- Component render tracking
-
-## 📞 Support
-
-### Internal Support
-- **Email**: support@velosight.internal
-- **Phone**: +1 (555) 123-4567 (24/7 for critical issues)
-- **Documentation**: Built-in FAQ system at `/faq`
+- **Build**: `npm run build`
+- **Recommended hosts**: Vercel, Netlify, or any static host with Node.js 18+
+- **Environment**: All config is embedded for basic use; production should secure secrets.
 
 ---
+
+## 🐞 Troubleshooting
+- **Uploads**: Max 10MB, supported types only
+- **Auth**: Clear cache/cookies, try incognito, check network
+- **Performance**: Use browser DevTools, disable extensions
+- **Debug**: Dev builds show extra logs and metrics
 
 ## 📝 Changelog
-
-### Version 1.0.0 (Current)
-- ✅ Complete refactoring for maintainability
-- ✅ Centralized error handling and validation
-- ✅ Reusable component library
-- ✅ Performance monitoring
-- ✅ Enhanced security measures
-- ✅ Comprehensive documentation
+- See `REFACTORING_SUMMARY.md` for recent changes.
 
 ---
 
-*Last updated: January 2025*
+*Last updated: September 2025*

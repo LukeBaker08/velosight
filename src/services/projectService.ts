@@ -24,10 +24,10 @@ export const fetchProjects = async (): Promise<Project[]> => {
     stage: project.stage,
     risk_level: project.risk_level,
     created_at: project.created_at,
-    last_updated: project.last_updated,
+    updated_at: project.updated_at,
     documents_count: project.documents_count,
     get riskLevel() { return this.risk_level; },
-    get lastUpdated() { return this.last_updated; },
+    get updatedAt() { return this.updated_at; },
     get documentsCount() { return this.documents_count; }
   }));
 };
@@ -50,7 +50,7 @@ export const getRecentProjects = async (limit: number = 5): Promise<Project[]> =
   const { data, error } = await supabase
     .from('projects')
     .select('*')
-    .order('last_updated', { ascending: false })
+    .order('updated_at', { ascending: false })
     .limit(limit);
   
   if (error) throw error;
@@ -63,10 +63,10 @@ export const getRecentProjects = async (limit: number = 5): Promise<Project[]> =
     stage: project.stage,
     risk_level: project.risk_level,
     created_at: project.created_at,
-    last_updated: project.last_updated,
+    updated_at: project.updated_at,
     documents_count: project.documents_count,
     get riskLevel() { return this.risk_level; },
-    get lastUpdated() { return this.last_updated; },
+    get updatedAt() { return this.updated_at; },
     get documentsCount() { return this.documents_count; }
   }));
 };
@@ -96,10 +96,10 @@ export const getProjectById = async (id: string): Promise<Project | null> => {
     stage: data.stage,
     risk_level: data.risk_level,
     created_at: data.created_at,
-    last_updated: data.last_updated,
+    updated_at: data.updated_at,
     documents_count: data.documents_count,
     get riskLevel() { return this.risk_level; },
-    get lastUpdated() { return this.last_updated; },
+    get lastUpdated() { return this.updated_at; },
     get documentsCount() { return this.documents_count; }
   };
 };

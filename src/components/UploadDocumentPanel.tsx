@@ -93,6 +93,7 @@ const UploadDocumentPanel: React.FC<UploadDocumentPanelProps> = ({
               type: documentType,
               category: category,
               uploader_id: user.id
+
             },
             setUploadProgress
           );

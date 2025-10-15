@@ -6,7 +6,7 @@ import AssuranceMaterials from '@/components/knowledge/AssuranceMaterials';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const FidereKnowledge: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('prompts');
+  const [activeTab, setActiveTab] = useState('materials');
   
   return (
     <Layout>
@@ -20,17 +20,19 @@ const FidereKnowledge: React.FC = () => {
         
         <Tabs defaultValue="prompts" value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full md:w-[400px] grid-cols-2 bg-secondary">
-            <TabsTrigger value="prompts">Prompts</TabsTrigger>
             <TabsTrigger value="materials">Reference Materials</TabsTrigger>
+            <TabsTrigger value="prompts">Prompts</TabsTrigger>
           </TabsList>
-          
+
+          <TabsContent value="materials" className="mt-6">
+            <AssuranceMaterials />
+          </TabsContent>
+
           <TabsContent value="prompts" className="mt-6">
             <PromptLibrary />
           </TabsContent>
           
-          <TabsContent value="materials" className="mt-6">
-            <AssuranceMaterials />
-          </TabsContent>
+
         </Tabs>
       </div>
     </Layout>

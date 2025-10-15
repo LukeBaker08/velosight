@@ -15,7 +15,7 @@ const transformProject = (dbProject: any): Project => {
   const project = {
     ...dbProject,
     get riskLevel() { return this.risk_level; },
-    get lastUpdated() { return this.last_updated; },
+    get lastUpdated() { return this.updated_at; },
     get documentsCount() { return this.documents_count; }
   };
   return project as Project;
@@ -50,7 +50,7 @@ export const getRecentProjects = async (): Promise<Project[]> => {
     const { data, error } = await supabase
       .from('projects')
       .select('*')
-      .order('last_updated', { ascending: false })
+      .order('updated_at', { ascending: false })
       .limit(5);
 
     if (error) {
@@ -152,7 +152,7 @@ export const updateProject = async (
       .from('projects')
       .update({
         ...updates,
-        last_updated: new Date().toISOString()
+        updated_at: new Date().toISOString()
       })
       .eq('id', id)
       .select()
@@ -216,7 +216,7 @@ export const updateProjectDocumentCount = async (projectId: string): Promise<voi
       .from('projects')
       .update({ 
         documents_count: count || 0,
-        last_updated: new Date().toISOString()
+        updated_at: new Date().toISOString()
       })
       .eq('id', projectId);
 

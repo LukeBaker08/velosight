@@ -12,7 +12,7 @@ interface AuthContextProps {
   }>;
   signOut: () => Promise<void>;
   loading: boolean;
-  isAdmin: boolean;
+  // isAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
@@ -21,23 +21,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
+  // const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
 
   // Simple role check function
-  const checkUserRole = async (userId: string): Promise<boolean> => {
-    try {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', userId)
-        .single();
-      
-      return profile?.role === 'admin';
-    } catch (error) {
-      return false;
-    }
-  };
+  // const checkUserRole = async (userId: string): Promise<boolean> => {
+  //   try {
+  //    const { data: profile } = await supabase
+  //      .from('profiles')
+  //      .select('role')
+  //      .eq('id', userId)
+  //      .single();
+
+  //    return profile?.role === 'admin';
+  //  } catch (error) {
+  //    return false;
+  //  }
+  //};
 
   useEffect(() => {
     // Set up auth state listener
@@ -47,7 +47,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(session?.user ?? null);
         
         if (event === 'SIGNED_OUT') {
-          setIsAdmin(false);
+          // setIsAdmin(false);
           navigate('/auth');
         }
         
@@ -63,10 +63,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(session?.user ?? null);
       
       // Check admin role if user exists
-      if (session?.user) {
-        const adminStatus = await checkUserRole(session.user.id);
-        setIsAdmin(adminStatus);
-      }
+      //if (session?.user) {
+      //  const adminStatus = await checkUserRole(session.user.id);
+      //  setIsAdmin(adminStatus);
+      //}
       
       setLoading(false);
     };
@@ -90,10 +90,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       
       // Check user role after successful login
-      if (data.user) {
-        const adminStatus = await checkUserRole(data.user.id);
-        setIsAdmin(adminStatus);
-      }
+      // if (data.user) {
+      //   const adminStatus = await checkUserRole(data.user.id);
+      //   setIsAdmin(adminStatus);
+      // }
       
       return { error: null };
     } catch (error) {
@@ -110,7 +110,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, signIn, signOut, loading, isAdmin }}>
+    <AuthContext.Provider value={{ user, session, signIn, signOut, loading }}>
       {children}
     </AuthContext.Provider>
   );

@@ -81,7 +81,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
           </div>
           <div className="flex items-center text-sm text-muted-foreground mb-4">
             <Calendar className="mr-2 h-4 w-4" />
-            <span>Updated {formatDate(project.lastUpdated)}</span>
+            <span>Updated {formatDate(project.updated_at)}</span>
           </div>
           <div className="flex flex-wrap gap-2 mt-2">
             {project.riskLevel && (

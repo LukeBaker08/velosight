@@ -18,12 +18,12 @@ export interface Project {
   stage: string | null;
   risk_level: string | null;
   created_at: string;
-  last_updated: string | null;
+  updated_at: string | null;
   documents_count: number | null;
   
   // Backward compatibility getters for legacy code
   get riskLevel(): string | null;
-  get lastUpdated(): string | null;
+  get updatedAt(): string | null;
   get documentsCount(): number | null;
 }
 
