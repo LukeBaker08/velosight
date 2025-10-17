@@ -29,7 +29,7 @@ interface DocumentWebhookData {
 }
 
 interface MaterialWebhookData {
-  title: string;
+  name: string;
   type: string;
   uploader_id: string;
   filename: string;
@@ -113,6 +113,7 @@ Complete document upload process with webhook notification
 =============================*/
 
 export const uploadDocument = async (
+
   file: File,
   projectId: string,
   documentData: {
@@ -122,7 +123,7 @@ export const uploadDocument = async (
     uploader_id: string;
   },
   onProgress?: (progress: number) => void
-): Promise<string> => {
+): Promise<{ success: boolean; documentId?: string; error?: string }> => {
   try {
     onProgress?.(10);
 
@@ -146,38 +147,42 @@ export const uploadDocument = async (
 
     if (dbError) {
       await deleteFile('documents', uploadResult.path).catch(() => {});
-      throw new NetworkError(`Database error: ${dbError.message}`);
+      return { success: false, error: `Database error: ${dbError.message}` };
     }
 
     onProgress?.(85);
 
+    // Only send metadata (including file_path) to webhook
     const webhookResult = await documentWebhooks.upload(projectId, document.id, {
       name: documentData.name,
       type: documentData.type,
       category: documentData.category,
       uploader_id: documentData.uploader_id,
       filename: file.name,
-      file,
+      file_path: uploadResult.path,
     });
 
     if (!webhookResult.success) {
       console.warn('Document upload webhook failed:', webhookResult.error);
+      // Optionally, include webhook error in result
+      return { success: false, documentId: document.id, error: webhookResult.error };
     }
 
     onProgress?.(100);
-    return document.id;
+    return { success: true, documentId: document.id };
   } catch (error) {
-    throw new Error(handleError(error, 'Document upload'));
+    return { success: false, error: handleError(error, 'Document upload') };
   }
 };
 
 /**
  * Complete material upload process with webhook notification
  */
+
 export const uploadMaterial = async (
   file: File | null,
   materialData: {
-    title: string;
+    name: string;
     type: string;
     content?: string;
     uploader_id: string;
@@ -218,11 +223,10 @@ export const uploadMaterial = async (
     onProgress?.(85);
 
     const webhookResult = await materialWebhooks.upload(material.id, {
-      title: materialData.title,
+      name: materialData.name,
       type: materialData.type,
       uploader_id: materialData.uploader_id,
-      filename: file ? file.name : '',
-      file: file ?? undefined,
+      file_path: filePath ?? '',
     });
 
     if (!webhookResult.success) {

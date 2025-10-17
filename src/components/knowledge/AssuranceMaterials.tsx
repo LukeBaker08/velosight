@@ -13,7 +13,7 @@ import { formatDate } from '@/utils/dateUtils';
 
 interface AssuranceDocument {
   id: string;
-  title: string;
+  name: string;
   type: string;
   file_path: string | null;
   content: string | null;
@@ -138,7 +138,7 @@ const AssuranceMaterials: React.FC = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Title</TableHead>
+              <TableHead>Name</TableHead>
               <TableHead className="hidden md:table-cell">Type</TableHead>
               <TableHead className="hidden md:table-cell">Date Added</TableHead>
               <TableHead className="w-[120px]">Actions</TableHead>
@@ -166,8 +166,8 @@ const AssuranceMaterials: React.FC = () => {
                   <TableCell>
                     <div className="flex items-center gap-2">
                       {getFileIcon(doc.type)}
-                      <span className="truncate max-w-[500px]" title={doc.title}>
-                        {doc.title}
+                      <span className="truncate max-w-[500px]" name={doc.name}>
+                        {doc.name}
                       </span>
                     </div>
                   </TableCell>

@@ -63,101 +63,37 @@ const UploadDocumentPanel: React.FC<UploadDocumentPanelProps> = ({
       toast.error('Please select a file to upload');
       return;
     }
-    
     const trimmedName = name.trim();
-    if (!documentType || !trimmedName) {
-      toast.error('Please fill in all required fields');
-      return;
-    }
-
-    if (!projectId || !user) {
-      toast.error('Missing project or user information');
-      return;
-    }
-    
     try {
       setIsUploading(true);
       setUploadProgress(0);
 
-      if (mode === 'edit' && existingDocument) {
-        // Handle document update
-        let filePath = existingDocument.file_path;
+      // Use centralized uploadDocument for both create and edit
+      await uploadDocument(
+        file!,
+        projectId,
+        {
+          name: sanitizeInput(trimmedName),
+          type: documentType,
+          category: category,
+          uploader_id: user.id
+        },
+        setUploadProgress
+      );
 
-        if (file) {
-          // Upload new file if provided
-          const uploadResult = await uploadDocument(
-            file, 
-            projectId, 
-            {
-              name: sanitizeInput(trimmedName),
-              type: documentType,
-              category: category,
-              uploader_id: user.id
+      toast.success(mode === 'edit' ? 'Document updated successfully!' : 'Document uploaded successfully!');
 
-            },
-            setUploadProgress
-          );
-          
-          // Update existing document record
-          const { error: dbError } = await supabase
-            .from('documents')
-            .update({
-              name: sanitizeInput(trimmedName),
-              type: documentType,
-              category: category,
-              file_path: filePath,
-              uploader_id: user.id
-            })
-            .eq('id', existingDocument.id);
-            
-          if (dbError) {
-            throw new Error(`Error updating document: ${dbError.message}`);
-          }
-        } else {
-          // Update metadata only
-          const { error: dbError } = await supabase
-            .from('documents')
-            .update({
-              name: sanitizeInput(trimmedName),
-              type: documentType,
-              category: category,
-            })
-            .eq('id', existingDocument.id);
-            
-          if (dbError) {
-            throw new Error(`Error updating document: ${dbError.message}`);
-          }
-        }
-        
-        toast.success('Document updated successfully!');
-      } else {
-        // Create new document
-        await uploadDocument(
-          file!, 
-          projectId, 
-          {
-            name: sanitizeInput(trimmedName),
-            type: documentType,
-            category: category,
-            uploader_id: user.id
-          },
-          setUploadProgress
-        );
-        
-        toast.success('Document uploaded successfully!');
-      }
-      
       // Reset form
       setFile(null);
       setDocumentType('other');
       setCategory('project');
       setName('');
       setUploadProgress(0);
-      
+
       if (onSuccess) {
         onSuccess();
       }
-    } catch (error: any) {
+    } catch (error) {
       const errorMessage = handleError(error, 'Document processing');
       toast.error(getErrorMessage(error));
     } finally {

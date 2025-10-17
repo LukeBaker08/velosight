@@ -6,11 +6,11 @@ import { Edit2, Download, Trash2, FileText } from "lucide-react";
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { downloadFile, deleteFileFromStorage } from '@/utils/fileOperations';
+import { downloadFile, deleteMaterial } from '@/lib/file-operations';
 
 interface AssuranceDocument {
   id: string;
-  title: string;
+  name: string;
   type: string;
   file_path: string | null;
   content: string | null;
@@ -40,27 +40,28 @@ const MaterialManagement: React.FC<MaterialManagementProps> = ({
   const canManageMaterial = canEdit && user && (material.uploader_id === user.id || !material.uploader_id);
 
   const handleDownload = async () => {
-    if (material.file_path) {
-      try {
-        await downloadFile('materials', material.file_path, material.title);
-      } catch (error) {
-        console.error('Download error:', error);
-        toast.error('Failed to download file');
+    try {
+      if (material.file_path) {
+        await downloadFile('materials', material.file_path, material.name);
+        toast.success('File downloaded successfully');
+      } else if (material.content) {
+        // Download text content as a file
+        const blob = new Blob([material.content], { type: 'text/plain' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${material.name}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        toast.success('Content downloaded successfully');
+      } else {
+        toast.error('No content available for download');
       }
-    } else if (material.content) {
-      // Download text content as a file
-      const blob = new Blob([material.content], { type: 'text/plain' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${material.title}.txt`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      toast.success('Content downloaded successfully');
-    } else {
-      toast.error('No content available for download');
+    } catch (error) {
+      console.error('Download error:', error);
+      toast.error('Failed to download file');
     }
   };
 
@@ -72,39 +73,7 @@ const MaterialManagement: React.FC<MaterialManagementProps> = ({
 
     try {
       setIsDeleting(true);
-
-      // Delete file from storage if it exists
-      if (material.file_path) {
-        await deleteFileFromStorage('materials', material.file_path);
-      }
-
-      // Delete database record
-      const { error } = await supabase
-        .from('framework_materials')
-        .delete()
-        .eq('id', material.id);
-
-      if (error) {
-        throw error;
-      }
-
-      // Trigger deletion webhook via Supabase Edge function
-      try {
-        const { error: webhookError } = await supabase.functions.invoke('material-deletion-webhook', {
-          body: {
-            document_id: material.id
-          }
-        });
-        
-        if (webhookError) {
-          console.error('Material deletion webhook error:', webhookError);
-        } else {
-          console.log('Material deletion webhook triggered successfully');
-        }
-      } catch (webhookError) {
-        console.error('Failed to trigger material deletion webhook:', webhookError);
-      }
-
+      await deleteMaterial(material.id);
       toast.success('Material deleted successfully');
       onUpdate();
     } catch (error: any) {
@@ -124,7 +93,7 @@ const MaterialManagement: React.FC<MaterialManagementProps> = ({
             variant="ghost"
             size="sm"
             onClick={handleDownload}
-            title="Download content"
+            name="Download content"
           >
             <Download className="h-4 w-4" />
             <span className="sr-only">Download</span>
@@ -136,7 +105,7 @@ const MaterialManagement: React.FC<MaterialManagementProps> = ({
               variant="ghost"
               size="sm"
               onClick={() => onEdit(material)}
-              title="Edit material"
+              name="Edit material"
             >
               <Edit2 className="h-4 w-4" />
               <span className="sr-only">Edit</span>
@@ -145,7 +114,7 @@ const MaterialManagement: React.FC<MaterialManagementProps> = ({
               variant="ghost"
               size="sm"
               onClick={() => setIsDeleteDialogOpen(true)}
-              title="Delete material"
+              name="Delete material"
             >
               <Trash2 className="h-4 w-4 text-destructive" />
               <span className="sr-only">Delete</span>
@@ -159,7 +128,7 @@ const MaterialManagement: React.FC<MaterialManagementProps> = ({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Material</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{material.title}"? This action cannot be undone.
+              Are you sure you want to delete "{material.name}"? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

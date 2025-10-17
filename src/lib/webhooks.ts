@@ -109,7 +109,7 @@ export const materialWebhooks = {
   async upload(
     materialId: string,
     data: {
-      title: string;
+      name: string;
       type: string;
       uploader_id: string;
       file_path: string;      // <-- pointer
@@ -120,7 +120,7 @@ export const materialWebhooks = {
     fd.append('document_id', materialId);
     fd.append('type', data.type);
     fd.append('uploader_id', data.uploader_id);
-    fd.append('title', data.title);
+    fd.append('name', data.name);
     fd.append('file_path', data.file_path);
     if (data.bucket) fd.append('bucket', data.bucket);
 

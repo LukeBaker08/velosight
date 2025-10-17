@@ -3,6 +3,7 @@
  * Layout wrapper component that provides consistent page structure with navigation and footer.
  * Maintains responsive design and proper spacing throughout the application.
  */
+
 import React from 'react';
 import Navbar from './Navbar';
 import { Link } from 'react-router-dom';
@@ -17,6 +18,7 @@ interface LayoutProps {
  * @param children - Page content to render within the layout structure
  * @returns JSX element with navbar, main content area, and footer
  */
+
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
     <div className="min-h-screen bg-[#000000] flex flex-col">

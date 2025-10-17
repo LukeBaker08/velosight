@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { deleteDocument } from '@/lib/file-operations';
-import { downloadFile } from '@/utils/fileOperations';
+import { downloadFile } from '@/lib/file-operations';
 import { handleError, getErrorMessage } from '@/lib/errors';
 
 interface Document {
