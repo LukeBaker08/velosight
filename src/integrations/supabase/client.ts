@@ -1,20 +1,37 @@
 // src/integrations/supabase/client.ts
-// This file is generated, but adapted to use env variables for flexibility.
-
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from './types'
 
-// ✅ Read values from environment variables
-// Vite only exposes vars prefixed with VITE_
-// Ensure you have .env.local for dev and .env.production for prod
+/**
+ * Universal environment getter: works in both browser (Vite) and Node (tsx)
+ */
+function getEnv(key: string): string | undefined {
+  // ✅ 1. Prefer Vite's build-time injected env (browser)
+  try {
+    // @ts-ignore
+    if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env[key]) {
+      return import.meta.env[key];
+    }
+  } catch {
+    /* ignore */
+  }
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string
+  // ✅ 2. Fallback to process.env (Node/SSR)
+  if (typeof process !== 'undefined' && process?.env?.[key]) {
+    return process.env[key];
+  }
 
-if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
-  console.error(
-    '❌ Supabase environment variables are missing. Check your .env.local or deployment config.'
-  )
+  return undefined;
 }
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY)
+// ✅ Works for both browser (VITE_*) and Node (.env)
+const SUPABASE_URL =
+  getEnv('VITE_SUPABASE_URL') || getEnv('SUPABASE_URL');
+const SUPABASE_KEY =
+  getEnv('VITE_SUPABASE_ANON_KEY') || getEnv('SUPABASE_ANON_KEY');
+
+if (!SUPABASE_URL || !SUPABASE_KEY) {
+  console.error('❌ Supabase environment variables missing.');
+}
+
+export const supabase = createClient<Database>(SUPABASE_URL!, SUPABASE_KEY!);

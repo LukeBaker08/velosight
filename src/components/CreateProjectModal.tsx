@@ -11,7 +11,8 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { validateProject, sanitizeInput } from '@/lib/validators';
 import { handleError, getErrorMessage } from '@/lib/errors';
-import { PROJECT_STAGES, RISK_LEVELS } from '@/lib/constants';
+import { PROJECT_STAGES, RISK_LEVELS, fetchProjectStages, fetchRiskLevels } from '@/lib/constants';
+import { useEffect } from 'react';
 
 interface CreateProjectModalProps {
   isOpen: boolean;
@@ -24,12 +25,46 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
     name: '',
     client: '',
     description: '',
-    risk_level: 'medium',
-    stage: 'planning'
+    risk_level: '',
+    stage: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [stages, setStages] = useState<string[]>(PROJECT_STAGES as unknown as string[]);
+  const [riskLevels, setRiskLevels] = useState<string[]>(RISK_LEVELS as unknown as string[]);
+  const [isLoadingStages, setIsLoadingStages] = useState(false);
+  const [isLoadingRiskLevels, setIsLoadingRiskLevels] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const load = async () => {
+      try {
+        setIsLoadingStages(true);
+        const s = await fetchProjectStages();
+        if (mounted && s && s.length > 0) setStages(s);
+      } catch (e) {
+        // keep fallback
+        console.warn('Failed to load project stages', e);
+      } finally {
+        if (mounted) setIsLoadingStages(false);
+      }
+
+      try {
+        setIsLoadingRiskLevels(true);
+        const r = await fetchRiskLevels();
+        if (mounted && r && r.length > 0) setRiskLevels(r);
+      } catch (e) {
+        console.warn('Failed to load risk levels', e);
+      } finally {
+        if (mounted) setIsLoadingRiskLevels(false);
+      }
+    };
+
+    load();
+    return () => { mounted = false; };
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -154,7 +189,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                     <SelectValue placeholder="Select risk level" />
                   </SelectTrigger>
                   <SelectContent>
-                    {RISK_LEVELS.map(level => (
+                    {(isLoadingRiskLevels ? RISK_LEVELS : riskLevels).map(level => (
                       <SelectItem key={level} value={level}>
                         {level.charAt(0).toUpperCase() + level.slice(1)}
                       </SelectItem>
@@ -172,7 +207,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                     <SelectValue placeholder="Select stage" />
                   </SelectTrigger>
                   <SelectContent>
-                    {PROJECT_STAGES.map(stage => (
+                    {(isLoadingStages ? PROJECT_STAGES : stages).map(stage => (
                       <SelectItem key={stage} value={stage}>
                         {stage.charAt(0).toUpperCase() + stage.slice(1)}
                       </SelectItem>

@@ -20,6 +20,7 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "react-hook-form";
+import { PROJECT_STAGES, RISK_LEVELS, fetchProjectStages, fetchRiskLevels } from '@/lib/constants';
 
 const Project = () => {
   const { id } = useParams<{ id: string }>();
@@ -31,6 +32,10 @@ const Project = () => {
   const { toast } = useToast();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [stages, setStages] = useState<string[]>(PROJECT_STAGES as unknown as string[]);
+  const [riskLevels, setRiskLevels] = useState<string[]>(RISK_LEVELS as unknown as string[]);
+  const [isLoadingStages, setIsLoadingStages] = useState(false);
+  const [isLoadingRiskLevels, setIsLoadingRiskLevels] = useState(false);
   
   // Form for editing project
   const form = useForm({
@@ -85,6 +90,31 @@ const Project = () => {
     };
 
     fetchProject();
+    // Also load dropdown lists for stages and risk levels
+    let mounted = true;
+    (async () => {
+      try {
+        setIsLoadingStages(true);
+        const s = await fetchProjectStages();
+        if (mounted && s && s.length > 0) setStages(s);
+      } catch (e) {
+        console.warn('Failed to load project stages', e);
+      } finally {
+        setIsLoadingStages(false);
+      }
+
+      try {
+        setIsLoadingRiskLevels(true);
+        const r = await fetchRiskLevels();
+        if (mounted && r && r.length > 0) setRiskLevels(r);
+      } catch (e) {
+        console.warn('Failed to load risk levels', e);
+      } finally {
+        setIsLoadingRiskLevels(false);
+      }
+    })();
+
+    return () => { mounted = false; };
   }, [id, toast, form]);
   
   // Handler for when analysis completes
@@ -368,9 +398,9 @@ const Project = () => {
                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2"
                             {...field}
                           >
-                            <option value="low">Low</option>
-                            <option value="medium">Medium</option>
-                            <option value="high">High</option>
+                            {(isLoadingRiskLevels ? RISK_LEVELS : riskLevels).map(level => (
+                              <option key={level} value={level}>{level.charAt(0).toUpperCase() + level.slice(1)}</option>
+                            ))}
                           </select>
                         </FormControl>
                         <FormMessage />
@@ -389,10 +419,9 @@ const Project = () => {
                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2"
                             {...field}
                           >
-                            <option value="planning">Planning</option>
-                            <option value="execution">Execution</option>
-                            <option value="review">Review</option>
-                            <option value="closed">Closed</option>
+                            {(isLoadingStages ? PROJECT_STAGES : stages).map(stage => (
+                              <option key={stage} value={stage}>{stage.charAt(0).toUpperCase() + stage.slice(1)}</option>
+                            ))}
                           </select>
                         </FormControl>
                         <FormMessage />

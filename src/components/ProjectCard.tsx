@@ -53,10 +53,10 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
   const getStageBadgeVariant = (stage: string) => {
     switch(stage?.toLowerCase()) {
       case 'planning': return 'planning';
-      case 'discovery': return 'discovery';
-      case 'development': return 'development';
+      case 'prioritisation': return 'prioritisation';
+      case 'contestability': return 'contestability';
       case 'implementation': return 'implementation';
-      case 'complete': return 'complete';
+      case 'closure': return 'closure';
       default: return 'outline';
     }
   };
