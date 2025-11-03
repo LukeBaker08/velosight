@@ -6,3 +6,6 @@
 .env.keys
 .env.local
 .env.*.local
+
+# Ragenv
+"ragenv/" | Out-File -FilePath .gitignore -Encoding utf8 -Append
