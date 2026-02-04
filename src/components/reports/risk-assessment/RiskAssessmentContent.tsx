@@ -108,28 +108,52 @@ const extractRiskData = (analysis: AnalysisResult | null): RiskAssessmentData | 
       };
     }
     
-    // Map DomainSpecific
+    // Map DomainSpecific (handles both array and object formats)
     if (extractedData.DomainSpecific) {
       transformedData.DomainSpecific = {};
-      Object.entries(extractedData.DomainSpecific).forEach(([key, value]: [string, any]) => {
-        if (transformedData.DomainSpecific) {
-          transformedData.DomainSpecific[key] = {
-            analysis: value?.summary || value
-          };
-        }
-      });
+      if (Array.isArray(extractedData.DomainSpecific)) {
+        // New schema: array of { domain, summary }
+        extractedData.DomainSpecific.forEach((item: any) => {
+          if (transformedData.DomainSpecific && item.domain) {
+            transformedData.DomainSpecific[item.domain] = {
+              analysis: item.summary
+            };
+          }
+        });
+      } else {
+        // Legacy: object with named keys
+        Object.entries(extractedData.DomainSpecific).forEach(([key, value]: [string, any]) => {
+          if (transformedData.DomainSpecific) {
+            transformedData.DomainSpecific[key] = {
+              analysis: value?.summary || value
+            };
+          }
+        });
+      }
     }
-    
-    // Map ProjectSpecific
+
+    // Map ProjectSpecific (handles both array and object formats)
     if (extractedData.ProjectSpecific) {
       transformedData.ProjectSpecific = {};
-      Object.entries(extractedData.ProjectSpecific).forEach(([key, value]: [string, any]) => {
-        if (transformedData.ProjectSpecific) {
-          transformedData.ProjectSpecific[key] = {
-            analysis: value?.summary || value
-          };
-        }
-      });
+      if (Array.isArray(extractedData.ProjectSpecific)) {
+        // New schema: array of { area, summary }
+        extractedData.ProjectSpecific.forEach((item: any) => {
+          if (transformedData.ProjectSpecific && item.area) {
+            transformedData.ProjectSpecific[item.area] = {
+              analysis: item.summary
+            };
+          }
+        });
+      } else {
+        // Legacy: object with named keys
+        Object.entries(extractedData.ProjectSpecific).forEach(([key, value]: [string, any]) => {
+          if (transformedData.ProjectSpecific) {
+            transformedData.ProjectSpecific[key] = {
+              analysis: value?.summary || value
+            };
+          }
+        });
+      }
     }
     
     // Map SentimentAnalysis - Updated to include implications

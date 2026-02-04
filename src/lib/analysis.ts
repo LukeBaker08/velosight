@@ -13,7 +13,7 @@ export interface AnalysisResult {
   confidence: string | null;
   rating: string | null;
   created_at: string;
-  status: 'draft' | 'final';
+  status: 'Draft' | 'Final';
   raw_result?: any;
 }
 
@@ -53,8 +53,8 @@ export const extractStructuredData = (analysis: AnalysisResult) => {
 /**
  * Get analysis status badge variant
  */
-export const getAnalysisStatusVariant = (status: 'draft' | 'final'): string => {
-  return status === 'final' ? 'default' : 'secondary';
+export const getAnalysisStatusVariant = (status: 'Draft' | 'final'): string => {
+  return status === 'Final' ? 'default' : 'secondary';
 };
 
 /**

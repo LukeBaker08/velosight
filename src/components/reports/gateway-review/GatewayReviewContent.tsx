@@ -182,18 +182,24 @@ const GatewayReviewContent: React.FC<GatewayReviewContentProps> = ({ analysis, p
               </div>
             )}
 
-            {/* Gateway Criteria - Moved here between rationale and recommendations */}
+            {/* Gateway Criteria - handles both array and object formats */}
             {gatewayData.GatewayReviewAssessment.gatewayCriteria && (
               <div>
                 <Separator className="my-4" />
                 <h4 className="font-medium text-sm mb-3">Gateway Criteria Assessment</h4>
                 <div className="space-y-3">
-                  {Object.entries(gatewayData.GatewayReviewAssessment.gatewayCriteria)
-                    .filter(([key]) => key !== '*') // Filter out the template entry
-                    .map(([key, criteria]: [string, any], index: number) => (
+                  {(Array.isArray(gatewayData.GatewayReviewAssessment.gatewayCriteria)
+                    ? gatewayData.GatewayReviewAssessment.gatewayCriteria.map((criteria: any) => ({
+                        key: criteria.criterion || 'Unknown',
+                        ...criteria
+                      }))
+                    : Object.entries(gatewayData.GatewayReviewAssessment.gatewayCriteria)
+                        .filter(([key]) => key !== '*')
+                        .map(([key, criteria]: [string, any]) => ({ key, ...criteria }))
+                  ).map((criteria: any, index: number) => (
                     <div key={index} className="border rounded-lg p-3">
                       <div className="flex items-center gap-2 mb-2">
-                        <h5 className="font-medium text-sm">{formatCriteriaTitle(key)}</h5>
+                        <h5 className="font-medium text-sm">{formatCriteriaTitle(criteria.key)}</h5>
                         <Badge variant={getAssessmentRatingBadgeVariant(criteria.rating)}>
                           {criteria.rating}
                         </Badge>

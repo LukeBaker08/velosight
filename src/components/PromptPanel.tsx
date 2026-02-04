@@ -8,23 +8,11 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useParams, useNavigate } from 'react-router-dom';
-import { webhookService } from "@/services/webhookService";
+import { analysisWebhooks } from "@/lib/webhooks";
 
 interface PromptPanelProps {
   onAnalysisComplete?: (results: any) => void;
 }
-
-interface Prompt {
-  id: string;
-  category: string;
-  prompt: string;
-}
-
-
-// Function to generate a unique session ID
-const generateSessionId = (): string => {
-  return Date.now().toString(36) + Math.random().toString(36).substring(2);
-};
 
 const PromptPanel: React.FC<PromptPanelProps> = ({ onAnalysisComplete }) => {
   const [availablePrompts, setAvailablePrompts] = useState<{id: string, name: string, prompt: string}[]>([]);
@@ -32,50 +20,25 @@ const PromptPanel: React.FC<PromptPanelProps> = ({ onAnalysisComplete }) => {
   const [promptText, setPromptText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLoadingPrompts, setIsLoadingPrompts] = useState(true);
-  const [sessionId, setSessionId] = useState<string>('');
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
   const { id: projectId } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  
+
   // Load prompts from Supabase on mount
   useEffect(() => {
     const fetchPrompts = async () => {
       try {
         setIsLoadingPrompts(true);
-        
+
         // Fetch prompts from database
         const { data, error } = await supabase
           .from('prompts')
           .select('id, category, prompt');
-          
+
         if (error) {
           console.error('Error loading prompts from database:', error);
-          
-          // Try to fall back to localStorage if database query fails
-          const savedPrompts = localStorage.getItem('promptLibrary');
-          if (savedPrompts) {
-            try {
-              const libraryPrompts = JSON.parse(savedPrompts);
-              const transformed = libraryPrompts.map((p: any) => ({
-                id: p.id,
-                name: p.category,
-                prompt: p.prompt
-              }));
-              
-              transformed.push({
-                id: 'custom',
-                name: 'Custom Prompt',
-                prompt: ''
-              });
-              
-              setAvailablePrompts(transformed);
-              return;
-            } catch (e) {
-              console.error('Error parsing localStorage prompts:', e);
-            }
-          }
-          
-          // If both database and localStorage fail, set a default
+
+          // Fallback to just custom option
           setAvailablePrompts([{
             id: 'custom',
             name: 'Custom Prompt',
@@ -83,25 +46,24 @@ const PromptPanel: React.FC<PromptPanelProps> = ({ onAnalysisComplete }) => {
           }]);
           return;
         }
-        
+
         // Transform prompts to compatible format
         const transformed = data.map(p => ({
           id: p.id,
           name: p.category,
           prompt: p.prompt
         }));
-        
+
         // Always add the custom prompt option
         transformed.push({
           id: 'custom',
           name: 'Custom Prompt',
           prompt: ''
         });
-        
+
         setAvailablePrompts(transformed);
       } catch (error) {
         console.error('Error in prompt fetching:', error);
-        // Fallback to empty prompts with just the custom option
         setAvailablePrompts([{
           id: 'custom',
           name: 'Custom Prompt',
@@ -111,16 +73,13 @@ const PromptPanel: React.FC<PromptPanelProps> = ({ onAnalysisComplete }) => {
         setIsLoadingPrompts(false);
       }
     };
-    
-    // Create a new session ID when component mounts
-    setSessionId(generateSessionId());
-    
+
     fetchPrompts();
   }, []);
-  
+
   const handlePromptChange = (value: string) => {
     setSelectedPromptId(value);
-    
+
     if (value === 'custom') {
       setPromptText('');
     } else {
@@ -130,120 +89,60 @@ const PromptPanel: React.FC<PromptPanelProps> = ({ onAnalysisComplete }) => {
       }
     }
   };
-  
+
   const handleRunAnalysis = async () => {
     if (!promptText.trim()) {
       toast.error('Please enter a prompt for analysis');
       return;
     }
-    
+
+    if (!projectId) {
+      toast.error('No project selected');
+      return;
+    }
+
     setIsProcessing(true);
     setShowAnalysisModal(true);
-    
+
     try {
-      const response = await sendWebhookRequest();
-      console.log('Webhook response:', response);
-      
-      if (response) {
-        // Save the analysis result to Supabase
-        if (projectId) {
-          try {
-            // Determine the analysis type - always use "Custom Prompt Analysis" for consistency
-            const analysisType = 'Custom Prompt Analysis';
-            
-            // Extract content based on response structure
-            let confidence = 'Medium';
-            let rating = '';
-            let analysisContent = '';
-            
-            // Handle different response formats
-            if (typeof response === 'string') {
-              analysisContent = response;
-            } else if (typeof response === 'object' && response !== null) {
-              // Extract values from the response object
-              confidence = response.confidence || response.insightConfidence || 'Medium';
-              rating = response.rating || response.overall_rating || '';
-              
-              // Try to extract the main content
-              if (response.output) {
-                analysisContent = response.output;
-              } else if (response.analysis_content) {
-                analysisContent = response.analysis_content;
-              } else if (response.overview) {
-                analysisContent = response.overview;
-              } else if (response.summary) {
-                analysisContent = response.summary;
-              } else if (response.message) {
-                analysisContent = response.message;
-              } else {
-                analysisContent = JSON.stringify(response, null, 2);
-              }
-            }
-            
-            // Log what we're saving to help with debugging
-            console.log('Saving custom prompt analysis to database:', {
-              project_id: projectId,
-              analysis_type: analysisType,
-              confidence,
-              overall_rating: rating,
-              analysis_subtype: 'Custom Prompt',
-              raw_result: response // Store the complete response as JSON
-            });
-            
-            // Insert the analysis result to the database
-            const { data: insertedData, error } = await supabase
-              .from('analysis_results')
-              .insert({
-                project_id: projectId,
-                analysis_type: analysisType,
-                analysis_subtype: 'Custom Prompt',
-                confidence,
-                overall_rating: rating,
-                raw_result: response // This should store the complete JSON response
-              })
-              .select()
-              .single();
-            
-            if (error) {
-              console.error('Supabase error when saving custom prompt analysis:', error);
-              throw error;
-            }
-            
-            console.log('Custom prompt analysis result saved to database:', insertedData);
-            
-            // Redirect to the custom analysis report
-            if (insertedData?.id) {
-              toast.success('Analysis complete! Redirecting to report...');
-              navigate(`/reports/custom-analysis/${projectId}/${insertedData.id}`);
-              return; // Exit early since we're redirecting
-            }
-          } catch (dbError) {
-            console.error('Error saving analysis to database:', dbError);
-            // Continue with the flow even if saving fails
-            toast.error('Analysis completed but failed to save to database');
-          }
+      console.log(`Running custom prompt analysis for project ${projectId}`);
+
+      // Use the unified analysis endpoint with 'custom-prompt' type
+      const response = await analysisWebhooks.run(
+        projectId,
+        'custom-prompt',
+        {
+          query: promptText
         }
-        
-        // Add analysis type to the response
-        const responseWithType = {
-          ...response,
-          analysisType: 'Custom Prompt Analysis'
-        };
-        
-        // Call the onAnalysisComplete callback if provided
+      );
+
+      if (response.success && response.data?.success) {
+        const result = response.data;
+        console.log('Custom prompt analysis completed:', result);
+
+        // Redirect to the custom analysis report
+        if (result.output?.id) {
+          toast.success('Analysis complete! Redirecting to report...');
+          navigate(`/reports/custom-analysis/${projectId}/${result.output.id}`);
+          return;
+        }
+
+        // Fallback success
+        toast.success('Custom analysis complete!');
         if (onAnalysisComplete) {
-          onAnalysisComplete(responseWithType);
+          onAnalysisComplete(result);
         }
-        
-        toast.success('Custom analysis complete! Results available in the Insights tab.');
       } else {
-        toast.error('No response received from the webhook. Please try again.');
+        const errorMessage = response.data?.error || response.error || 'Analysis failed';
+        throw new Error(errorMessage);
       }
+
     } catch (error) {
-      console.error('Webhook error:', error);
-      toast.error('Error connecting to webhook. Please try again.');
-      
-      // Notify parent of the error
+      console.error('Custom prompt analysis error:', error);
+      toast.error('Analysis failed', {
+        description: error instanceof Error ? error.message : 'Unknown error'
+      });
+
       if (onAnalysisComplete) {
         onAnalysisComplete({
           error: true,
@@ -257,82 +156,6 @@ const PromptPanel: React.FC<PromptPanelProps> = ({ onAnalysisComplete }) => {
     }
   };
 
-  const sendWebhookRequest = async () => {
-    // Create a new session ID for this request
-    const currentSessionId = sessionId || generateSessionId();
-
-    try {
-      // Get webhook URL dynamically
-      const webhookUrl = await webhookService.getWebhookUrl('prompt.custom');
-      
-      if (!webhookUrl) {
-        throw new Error('No webhook configured for custom prompts');
-      }
-
-      // Using GET method as required by the webhook
-      const url = new URL(webhookUrl);
-      
-      // Add query parameters including project_id
-      url.searchParams.append('session', currentSessionId);
-      url.searchParams.append('prompt', encodeURIComponent(promptText));
-      
-      // Add project_id to the webhook call
-      if (projectId) {
-        url.searchParams.append('project_id', projectId);
-      }
-      
-      // Set a longer timeout (60 seconds)
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Request timeout - the server is taking too long to respond')), 60000)
-      );
-      
-      const fetchPromise = fetch(url.toString(), {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache'
-        }
-      });
-      
-      // Race between fetch and timeout
-      const response = await Promise.race([fetchPromise, timeoutPromise]) as Response;
-
-      if (response.ok) {
-        try {
-          const contentType = response.headers.get('content-type');
-          if (contentType && contentType.includes('application/json')) {
-            const jsonResponse = await response.json();
-            console.log('Parsed JSON response:', jsonResponse);
-            return jsonResponse;
-          } else {
-            const text = await response.text();
-            console.log('Non-JSON response:', text);
-            // Return a structured response even for text
-            return { 
-              output: text,
-              message: 'Analysis completed',
-              rawResponse: text 
-            };
-          }
-        } catch (e) {
-          console.error('Error parsing response:', e);
-          const text = await response.text();
-          return { 
-            output: text || 'Analysis completed but response could not be parsed',
-            message: 'Analysis completed but response could not be parsed' 
-          };
-        }
-      } else {
-        const errorText = await response.text();
-        console.error('Error response:', response.status, response.statusText, errorText);
-        throw new Error(`Server responded with status: ${response.status}. ${errorText}`);
-      }
-    } catch (e) {
-      console.error('Error sending webhook request:', e);
-      throw e;
-    }
-  };
-  
   return (
     <>
       <Card className="w-full">
@@ -357,7 +180,7 @@ const PromptPanel: React.FC<PromptPanelProps> = ({ onAnalysisComplete }) => {
               </SelectContent>
             </Select>
           </div>
-          
+
           <div className="grid gap-2">
             <Textarea
               placeholder="Enter your analysis prompt here..."
@@ -366,7 +189,7 @@ const PromptPanel: React.FC<PromptPanelProps> = ({ onAnalysisComplete }) => {
               className="min-h-[120px]"
             />
             <p className="text-xs text-muted-foreground">
-              Be specific about what you want to analyze. Include any relevant context.
+              Be specific about what you want to analyse. Include any relevant context.
             </p>
           </div>
         </CardContent>
@@ -376,7 +199,7 @@ const PromptPanel: React.FC<PromptPanelProps> = ({ onAnalysisComplete }) => {
           </Button>
         </CardFooter>
       </Card>
-      
+
       {/* Analysis Processing Modal */}
       <Dialog open={showAnalysisModal} onOpenChange={setShowAnalysisModal}>
         <DialogContent className="sm:max-w-md">

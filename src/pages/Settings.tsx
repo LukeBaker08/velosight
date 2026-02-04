@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { useAuth } from '@/context/AuthContext';
 import { useAllDropdownCategories } from '@/hooks/useAllDropdownCategories';
 import DropdownCategoryEditor from '@/components/settings/DropdownCategoryEditor';
+import AnalysisParametersEditor from '@/components/settings/AnalysisParametersEditor';
 import { Button } from "@/components/ui/button";
 import { 
   Table, 
@@ -166,8 +167,9 @@ const Settings = () => {
         </div>
 
         <Tabs defaultValue="account" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="account">Account</TabsTrigger>
+            <TabsTrigger value="analysis">Analysis Parameters</TabsTrigger>
             <TabsTrigger value="architecture">Architecture</TabsTrigger>
             <TabsTrigger value="system">System Status</TabsTrigger>
             <TabsTrigger value="categories">Categories</TabsTrigger>
@@ -194,6 +196,10 @@ const Settings = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="analysis" className="space-y-6 mt-6">
+            <AnalysisParametersEditor />
           </TabsContent>
 
           <TabsContent value="architecture" className="space-y-6">

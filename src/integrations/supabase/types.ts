@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      analysis_types: {
+        Row: {
+          id: string
+          key: string
+          name: string
+          description: string | null
+          icon: string
+          icon_color: string
+          system_prompt: string
+          user_prompt_template: string
+          enabled: boolean
+          sort_order: number
+          requires_subtype: boolean
+          subtypes: Json | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          key: string
+          name: string
+          description?: string | null
+          icon?: string
+          icon_color?: string
+          system_prompt: string
+          user_prompt_template: string
+          enabled?: boolean
+          sort_order?: number
+          requires_subtype?: boolean
+          subtypes?: Json | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          key?: string
+          name?: string
+          description?: string | null
+          icon?: string
+          icon_color?: string
+          system_prompt?: string
+          user_prompt_template?: string
+          enabled?: boolean
+          sort_order?: number
+          requires_subtype?: boolean
+          subtypes?: Json | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       analysis_results: {
         Row: {
           analysis_subtype: string | null

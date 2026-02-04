@@ -57,40 +57,47 @@ const CustomAnalysis = () => {
       
       // Handle object responses
       if (typeof rawResult === 'object' && rawResult !== null) {
+        // Helper to ensure a value is a renderable string
+        const ensureString = (val: any): string => {
+          if (typeof val === 'string') return val;
+          if (val && typeof val === 'object') return JSON.stringify(val, null, 2);
+          return String(val);
+        };
+
         // Handle array format (like the provided example)
         if (Array.isArray(rawResult) && rawResult.length > 0) {
           const firstItem = rawResult[0];
           if (typeof firstItem === 'object' && firstItem.output) {
-            return firstItem.output;
+            return ensureString(firstItem.output);
           }
           if (typeof firstItem === 'string') {
             return firstItem;
           }
         }
-        
+
         // Try various common field names for the main content
-        if (rawResult.output) {
-          return rawResult.output;
+        if (rawResult.output != null) {
+          return ensureString(rawResult.output);
         }
-        if (rawResult.analysis_content) {
-          return rawResult.analysis_content;
+        if (rawResult.analysis_content != null) {
+          return ensureString(rawResult.analysis_content);
         }
-        if (rawResult.content) {
-          return rawResult.content;
+        if (rawResult.content != null) {
+          return ensureString(rawResult.content);
         }
-        if (rawResult.message) {
-          return rawResult.message;
+        if (rawResult.message != null) {
+          return ensureString(rawResult.message);
         }
-        if (rawResult.summary) {
-          return rawResult.summary;
+        if (rawResult.summary != null) {
+          return ensureString(rawResult.summary);
         }
-        if (rawResult.overview) {
-          return rawResult.overview;
+        if (rawResult.overview != null) {
+          return ensureString(rawResult.overview);
         }
-        if (rawResult.text) {
-          return rawResult.text;
+        if (rawResult.text != null) {
+          return ensureString(rawResult.text);
         }
-        
+
         // If none of the above, stringify the object nicely
         return JSON.stringify(rawResult, null, 2);
       }

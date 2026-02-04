@@ -10,6 +10,7 @@
 // API Configuration
 export const API_CONFIG = {
   TIMEOUT: 10000,
+  TIMEOUT_LONG: 120000, // 2 minutes – for LLM generation calls
   RETRY_ATTEMPTS: 3,
 } as const;
 
@@ -40,11 +41,11 @@ export const USER_ROLES = {
 import { supabase } from '@/integrations/supabase/client';
 
 export const DEFAULT_PROJECT_STAGES = [
-  'planning',
-  'initiation',
-  'execution',
-  'monitoring',
-  'closure'
+  'Planning',
+  'Contestability',
+  'Prioritisation',
+  'Implementation',
+  'Closure'
 ] as const;
 
 /**
