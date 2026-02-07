@@ -2,7 +2,7 @@
  * Input validation utilities
  */
 
-import { DOCUMENT_CONFIG, PROJECT_STAGES, RISK_LEVELS } from './constants';
+import { DOCUMENT_CONFIG } from './constants';
 import { ValidationError } from './errors';
 
 /**
@@ -53,23 +53,13 @@ export const validateFile = (file: File): void => {
 export const validateProject = (data: {
   name: string;
   client: string;
-  stage?: string;
-  riskLevel?: string;
 }): void => {
   if (!data.name?.trim()) {
     throw new ValidationError('Project name is required', 'name');
   }
-  
+
   if (!data.client?.trim()) {
     throw new ValidationError('Client name is required', 'client');
-  }
-  
-  if (data.stage && !PROJECT_STAGES.includes(data.stage as any)) {
-    throw new ValidationError('Invalid project stage', 'stage');
-  }
-  
-  if (data.riskLevel && !RISK_LEVELS.includes(data.riskLevel as any)) {
-    throw new ValidationError('Invalid risk level', 'riskLevel');
   }
 };
 

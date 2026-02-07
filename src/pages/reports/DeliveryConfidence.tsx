@@ -5,7 +5,7 @@ import DeliveryConfidenceContent from '@/components/reports/delivery-confidence/
 
 const DeliveryConfidence = () => {
   return (
-    <ReportLayout title="Delivery Confidence Assessment Report" analysisType="Delivery Confidence Assessment">
+    <ReportLayout title="Delivery Confidence Assessment Report" analysisType="Delivery Confidence Assessment" reportTypeKey="delivery-confidence">
       {(analysis, project) => (
         <DeliveryConfidenceContent analysis={analysis} project={project} />
       )}

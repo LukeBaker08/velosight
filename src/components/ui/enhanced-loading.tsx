@@ -5,7 +5,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { performanceMonitor } from '@/lib/performance';
-import { CONFIG } from '@/lib/config';
+import { CONFIG } from '@/lib/constants';
 
 interface EnhancedLoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg';

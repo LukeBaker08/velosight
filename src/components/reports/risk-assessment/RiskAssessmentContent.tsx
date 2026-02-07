@@ -10,7 +10,7 @@ import { format } from 'date-fns';
 import SelfAwarenessSection from '../common/SelfAwarenessSection';
 import ProjectContextSection from '../common/ProjectContextSection';
 import UnifiedProjectInfoCards from '../common/UnifiedProjectInfoCards';
-import { getConfidenceBadgeVariant, formatDimensionKey } from '../common/helpers';
+import { getConfidenceBadgeVariant, formatDimensionKey, getRiskRatingBadgeVariant, extractModelUsed } from '../common/helpers';
 import { TrendingUp, Shield, Eye, AlertTriangle, Zap, FileText } from 'lucide-react';
 
 interface RiskAssessmentContentProps {
@@ -198,19 +198,6 @@ const extractRiskData = (analysis: AnalysisResult | null): RiskAssessmentData | 
   }
 };
 
-// Helper function to get risk badge variant - updated for moderate risk ratings
-const getRiskBadgeVariant = (risk: string | null | undefined) => {
-  if (!risk) return "outline";
-  
-  const riskLower = risk?.toLowerCase();
-  
-  // Handle specific risk ratings consistently - updated for moderate
-  if (riskLower?.includes('low')) return "confidence-high"; // Low risk = green
-  if (riskLower?.includes('moderate') || riskLower?.includes('medium')) return "confidence-medium"; // Moderate risk = amber
-  if (riskLower?.includes('high')) return "confidence-low"; // High risk = red
-  
-  return "outline";
-};
 
 const RiskAssessmentContent: React.FC<RiskAssessmentContentProps> = ({ analysis, project }) => {
   const riskData = extractRiskData(analysis);
@@ -255,6 +242,9 @@ const RiskAssessmentContent: React.FC<RiskAssessmentContentProps> = ({ analysis,
       <div>
         {project && analysis && (
           <p className="text-sm text-muted-foreground mt-1 mb-4">
+            {extractModelUsed(analysis.raw_result) && (
+              <span>Model: {extractModelUsed(analysis.raw_result)} | </span>
+            )}
             Last updated: {format(new Date(analysis.created_at), 'dd MMM yyyy, HH:mm')}
           </p>
         )}
@@ -427,7 +417,7 @@ const RiskAssessmentContent: React.FC<RiskAssessmentContentProps> = ({ analysis,
                     <div key={index} className="border rounded-md p-3">
                       <div className="flex justify-between items-start mb-2">
                         <span className="font-medium">{item.description}</span>
-                        <Badge variant={getRiskBadgeVariant(item.rating)}>
+                        <Badge variant={getRiskRatingBadgeVariant(item.rating)}>
                           {item.rating}
                         </Badge>
                       </div>

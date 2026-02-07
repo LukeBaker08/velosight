@@ -5,7 +5,7 @@ import GatewayReviewContent from '@/components/reports/gateway-review/GatewayRev
 
 const GatewayReview = () => {
   return (
-    <ReportLayout title="Gateway Review Report" analysisType="Gateway Review">
+    <ReportLayout title="Gateway Review Report" analysisType="Gateway Review" reportTypeKey="gateway-review">
       {(analysis, project) => (
         <GatewayReviewContent analysis={analysis} project={project} />
       )}

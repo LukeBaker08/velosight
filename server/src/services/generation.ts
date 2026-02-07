@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { generateAnalysis, type OutputSchema } from './azure-openai.js';
-import { retrieveTriangulatedContext, formatContextForLLM } from './retrieval.js';
+import { retrieveTriangulatedContext, formatContextForLLM, type RetrievalSettings, DEFAULT_RETRIEVAL_SETTINGS } from './retrieval.js';
 
 // Create Supabase client for server-side using SERVICE ROLE KEY (bypasses RLS)
 // This is safe because this code runs on our backend server, not in the browser
@@ -36,7 +36,6 @@ export interface AnalysisRequest {
   analysisTypeKey: string;
   query?: string;
   subtype?: string;
-  topK?: number;
 }
 
 /**
@@ -161,6 +160,63 @@ export async function updateAnalysisType(
 }
 
 /**
+ * Fetch retrieval settings from Supabase
+ */
+export async function getRetrievalSettings(): Promise<RetrievalSettings> {
+  try {
+    const { data, error } = await supabase
+      .from('app_settings')
+      .select('value')
+      .eq('key', 'retrieval_settings')
+      .single();
+
+    if (error || !data) {
+      console.log('[Generation] Using default retrieval settings');
+      return DEFAULT_RETRIEVAL_SETTINGS;
+    }
+
+    // Merge with defaults to ensure all fields are present
+    return {
+      ...DEFAULT_RETRIEVAL_SETTINGS,
+      ...data.value
+    };
+  } catch (error) {
+    console.error('[Generation] Error fetching retrieval settings:', error);
+    return DEFAULT_RETRIEVAL_SETTINGS;
+  }
+}
+
+/**
+ * Update retrieval settings in Supabase
+ */
+export async function updateRetrievalSettings(settings: Partial<RetrievalSettings>): Promise<{ success: boolean; error?: string }> {
+  try {
+    // Merge with existing settings
+    const currentSettings = await getRetrievalSettings();
+    const newSettings = { ...currentSettings, ...settings };
+
+    const { error } = await supabase
+      .from('app_settings')
+      .upsert({
+        key: 'retrieval_settings',
+        value: newSettings,
+        description: 'Number of chunks to retrieve per category during RAG analysis'
+      }, { onConflict: 'key' });
+
+    if (error) {
+      console.error('[Generation] Failed to update retrieval settings:', error.message);
+      return { success: false, error: error.message };
+    }
+
+    console.log('[Generation] Retrieval settings updated:', newSettings);
+    return { success: true };
+  } catch (error: any) {
+    console.error('[Generation] Error updating retrieval settings:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
  * Extract confidence rating from LLM output
  */
 function extractConfidence(output: any): string | null {
@@ -213,7 +269,7 @@ function extractOverallRating(output: any): string | null {
  * 4. Saves result to Supabase analysis_results table
  */
 export async function runAnalysis(request: AnalysisRequest): Promise<AnalysisResult> {
-  const { projectId, analysisTypeKey, query, subtype, topK = 3 } = request;
+  const { projectId, analysisTypeKey, query, subtype } = request;
 
   console.log(`[Generation] Running analysis: ${analysisTypeKey} for project ${projectId}`);
 
@@ -241,11 +297,13 @@ export async function runAnalysis(request: AnalysisRequest): Promise<AnalysisRes
   }
 
   try {
-    // Step 2: Retrieve triangulated context
+    // Step 2: Fetch retrieval settings and retrieve triangulated context
     const contextQuery = query || analysisType.description || `Perform ${analysisType.name}`;
     console.log(`[Generation] Retrieving context for: "${contextQuery.substring(0, 50)}..."`);
 
-    const context = await retrieveTriangulatedContext(projectId, contextQuery, topK);
+    // Fetch configurable retrieval settings from database
+    const retrievalSettings = await getRetrievalSettings();
+    const context = await retrieveTriangulatedContext(projectId, contextQuery, retrievalSettings);
     const formattedContext = formatContextForLLM(context);
 
     const contextCounts = {
@@ -273,7 +331,11 @@ export async function runAnalysis(request: AnalysisRequest): Promise<AnalysisRes
     // Step 4: Generate analysis with LLM (structured output enforcement when schema available)
     const hasSchema = !!analysisType.output_schema;
     console.log(`[Generation] Calling Azure OpenAI for ${analysisType.name} (structured output: ${hasSchema})...`);
-    const rawOutput = await generateAnalysis(systemPrompt, userPrompt, 0, analysisType.output_schema);
+    const analysisResult = await generateAnalysis(systemPrompt, userPrompt, 1, analysisType.output_schema);
+    const rawOutput = analysisResult.content;
+    const modelUsed = analysisResult.model;
+
+    console.log(`[Generation] Model used: ${modelUsed}`);
 
     // Step 5: Parse JSON output
     let output: any;
@@ -294,11 +356,11 @@ export async function runAnalysis(request: AnalysisRequest): Promise<AnalysisRes
     const confidence = extractConfidence(output) || 'Medium';
     const overallRating = extractOverallRating(output);
 
-    // Step 7: Save to Supabase (include prompt for custom analyses)
+    // Step 7: Save to Supabase (include prompt for custom analyses and model used)
     console.log(`[Generation] Saving result to Supabase...`);
     const rawResult = analysisTypeKey === 'custom-prompt'
-      ? { prompt: query, output: output.response || (typeof output === 'string' ? output : JSON.stringify(output)) }
-      : output;
+      ? { prompt: query, output: output.response || (typeof output === 'string' ? output : JSON.stringify(output)), _meta: { model: modelUsed } }
+      : { ...output, _meta: { model: modelUsed } };
 
     const { data: savedResult, error: saveError } = await supabase
       .from('analysis_results')

@@ -4,7 +4,9 @@ import {
   getAllAnalysisTypes,
   getAllAnalysisTypesAdmin,
   getAnalysisType,
-  updateAnalysisType
+  updateAnalysisType,
+  getRetrievalSettings,
+  updateRetrievalSettings
 } from '../services/generation.js';
 
 export const analysisRouter = Router();
@@ -38,6 +40,25 @@ analysisRouter.get('/types', async (req, res) => {
     });
   } catch (error: any) {
     console.error('[API] Error fetching analysis types:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to fetch analysis types'
+    });
+  }
+});
+
+/**
+ * GET /api/analysis/types/admin/all
+ * Fetch all analysis types with full details (for settings editor)
+ * NOTE: Must be registered before /types/:key to avoid the wildcard capturing "admin"
+ */
+analysisRouter.get('/types/admin/all', async (req, res) => {
+  try {
+    console.log('[API] Fetching all analysis types (admin)');
+    const types = await getAllAnalysisTypesAdmin();
+    res.json({ success: true, data: types });
+  } catch (error: any) {
+    console.error('[API] Error fetching analysis types (admin):', error);
     res.status(500).json({
       success: false,
       error: error.message || 'Failed to fetch analysis types'
@@ -87,24 +108,6 @@ analysisRouter.get('/types/:key', async (req, res) => {
 });
 
 /**
- * GET /api/analysis/types/admin/all
- * Fetch all analysis types with full details (for settings editor)
- */
-analysisRouter.get('/types/admin/all', async (req, res) => {
-  try {
-    console.log('[API] Fetching all analysis types (admin)');
-    const types = await getAllAnalysisTypesAdmin();
-    res.json({ success: true, data: types });
-  } catch (error: any) {
-    console.error('[API] Error fetching analysis types (admin):', error);
-    res.status(500).json({
-      success: false,
-      error: error.message || 'Failed to fetch analysis types'
-    });
-  }
-});
-
-/**
  * PUT /api/analysis/types/:id
  * Update analysis type parameters (system prompt, user prompt, output schema)
  */
@@ -142,6 +145,7 @@ analysisRouter.put('/types/:id', async (req, res) => {
 /**
  * POST /api/analysis/run
  * Run an analysis - single endpoint for all analysis types
+ * Retrieval settings (topK per category) are fetched from app_settings table
  *
  * Request body:
  * {
@@ -149,12 +153,11 @@ analysisRouter.put('/types/:id', async (req, res) => {
  *   analysisTypeKey: string (required) - e.g., 'risk-analysis', 'delivery-confidence'
  *   query?: string - optional custom query (defaults to analysis description)
  *   subtype?: string - required for gateway-review, optional for others
- *   topK?: number - number of chunks per category (default: 3)
  * }
  */
 analysisRouter.post('/run', async (req, res) => {
   try {
-    const { projectId, analysisTypeKey, query, subtype, topK } = req.body;
+    const { projectId, analysisTypeKey, query, subtype } = req.body;
 
     // Validate required fields
     if (!projectId) {
@@ -174,13 +177,12 @@ analysisRouter.post('/run', async (req, res) => {
     console.log(`[API] Running analysis: ${analysisTypeKey} for project ${projectId}`);
     if (subtype) console.log(`[API] Subtype: ${subtype}`);
 
-    // Run the analysis
+    // Run the analysis (retrieval settings are fetched from database)
     const result = await runAnalysis({
       projectId,
       analysisTypeKey,
       query,
-      subtype,
-      topK: topK || 3
+      subtype
     });
 
     if (!result.success) {
@@ -193,6 +195,65 @@ analysisRouter.post('/run', async (req, res) => {
     res.status(500).json({
       success: false,
       error: error.message || 'Analysis failed'
+    });
+  }
+});
+
+/**
+ * GET /api/analysis/settings/retrieval
+ * Get current retrieval settings (topK values per category)
+ */
+analysisRouter.get('/settings/retrieval', async (req, res) => {
+  try {
+    console.log('[API] Fetching retrieval settings');
+    const settings = await getRetrievalSettings();
+    res.json({ success: true, data: settings });
+  } catch (error: any) {
+    console.error('[API] Error fetching retrieval settings:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to fetch retrieval settings'
+    });
+  }
+});
+
+/**
+ * PUT /api/analysis/settings/retrieval
+ * Update retrieval settings (topK values per category)
+ *
+ * Request body:
+ * {
+ *   framework_topk?: number
+ *   context_topk?: number
+ *   project_topk?: number
+ *   sentiment_topk?: number
+ * }
+ */
+analysisRouter.put('/settings/retrieval', async (req, res) => {
+  try {
+    const { framework_topk, context_topk, project_topk, sentiment_topk } = req.body;
+
+    console.log('[API] Updating retrieval settings:', req.body);
+
+    const result = await updateRetrievalSettings({
+      framework_topk,
+      context_topk,
+      project_topk,
+      sentiment_topk
+    });
+
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    // Return updated settings
+    const updatedSettings = await getRetrievalSettings();
+    res.json({ success: true, data: updatedSettings });
+  } catch (error: any) {
+    console.error('[API] Error updating retrieval settings:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to update retrieval settings'
     });
   }
 });

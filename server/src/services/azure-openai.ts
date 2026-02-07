@@ -39,22 +39,31 @@ export interface OutputSchema {
 }
 
 /**
+ * Result from generateAnalysis including the model used
+ */
+export interface GenerateAnalysisResult {
+  content: string;
+  model: string;
+}
+
+/**
  * Generate analysis using Azure OpenAI GPT-4o with structured output enforcement.
  * When an outputSchema is provided, uses json_schema response format
  * (enforced at the API level). Otherwise falls back to json_object mode.
  *
  * @param systemPrompt System instructions
  * @param userPrompt User query/request
- * @param temperature Randomness (0-1, default 0 for deterministic)
+ * @param temperature Randomness (0-1, default 1 for balanced creativity)
  * @param outputSchema Optional JSON Schema for structured output enforcement
- * @returns JSON string from GPT-4o
+ * @returns Object containing JSON string from GPT-4o and the model used
  */
 export async function generateAnalysis(
   systemPrompt: string,
   userPrompt: string,
-  temperature: number = 0,
+  temperature: number = 1,
   outputSchema?: OutputSchema | null
-): Promise<string> {
+): Promise<GenerateAnalysisResult> {
+  const deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT_GPT4O!;
   let responseFormat: any;
 
   if (outputSchema && outputSchema.name && outputSchema.schema) {
@@ -78,7 +87,7 @@ export async function generateAnalysis(
   }
 
   const response = await getClient().chat.completions.create({
-    model: process.env.AZURE_OPENAI_DEPLOYMENT_GPT4O!,
+    model: deploymentName,
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt }
@@ -87,5 +96,8 @@ export async function generateAnalysis(
     response_format: responseFormat
   });
 
-  return response.choices[0]?.message?.content || "{}";
+  return {
+    content: response.choices[0]?.message?.content || "{}",
+    model: deploymentName
+  };
 }

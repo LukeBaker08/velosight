@@ -11,8 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { validateProject, sanitizeInput } from '@/lib/validators';
 import { handleError, getErrorMessage } from '@/lib/errors';
-import { PROJECT_STAGES, RISK_LEVELS, fetchProjectStages, fetchRiskLevels } from '@/lib/constants';
-import { useEffect } from 'react';
+import { useDropdownValues } from '@/hooks/useDropdownValues';
 
 interface CreateProjectModalProps {
   isOpen: boolean;
@@ -31,40 +30,8 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [stages, setStages] = useState<string[]>(PROJECT_STAGES as unknown as string[]);
-  const [riskLevels, setRiskLevels] = useState<string[]>(RISK_LEVELS as unknown as string[]);
-  const [isLoadingStages, setIsLoadingStages] = useState(false);
-  const [isLoadingRiskLevels, setIsLoadingRiskLevels] = useState(false);
-
-  useEffect(() => {
-    let mounted = true;
-
-    const load = async () => {
-      try {
-        setIsLoadingStages(true);
-        const s = await fetchProjectStages();
-        if (mounted && s && s.length > 0) setStages(s);
-      } catch (e) {
-        // keep fallback
-        console.warn('Failed to load project stages', e);
-      } finally {
-        if (mounted) setIsLoadingStages(false);
-      }
-
-      try {
-        setIsLoadingRiskLevels(true);
-        const r = await fetchRiskLevels();
-        if (mounted && r && r.length > 0) setRiskLevels(r);
-      } catch (e) {
-        console.warn('Failed to load risk levels', e);
-      } finally {
-        if (mounted) setIsLoadingRiskLevels(false);
-      }
-    };
-
-    load();
-    return () => { mounted = false; };
-  }, []);
+  const { values: stages } = useDropdownValues('%stage%');
+  const { values: riskLevels } = useDropdownValues('%Risk%');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -149,20 +116,22 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="name">Project Name</Label>
+              <Label htmlFor="name">Project Name <span className="text-destructive">*</span></Label>
               <Input
                 id="name"
                 name="name"
+                placeholder="e.g., Infrastructure Upgrade Phase 2"
                 value={projectData.name}
                 onChange={handleChange}
                 required
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="client">Client</Label>
+              <Label htmlFor="client">Client <span className="text-destructive">*</span></Label>
               <Input
                 id="client"
                 name="client"
+                placeholder="e.g., Acme Corporation"
                 value={projectData.client}
                 onChange={handleChange}
                 required
@@ -173,23 +142,25 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
               <Textarea
                 id="description"
                 name="description"
+                placeholder="Brief overview of the engagement scope and objectives..."
                 value={projectData.description}
                 onChange={handleChange}
-                rows={3}
+                className="min-h-[80px]"
               />
+              <p className="text-xs text-muted-foreground">Optional. Add context to help with analysis.</p>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="risk_level">Risk Level</Label>
-                <Select 
-                  value={projectData.risk_level} 
+                <Select
+                  value={projectData.risk_level}
                   onValueChange={(value) => handleSelectChange('risk_level', value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select risk level" />
                   </SelectTrigger>
                   <SelectContent>
-                    {(isLoadingRiskLevels ? RISK_LEVELS : riskLevels).map(level => (
+                    {riskLevels.map(level => (
                       <SelectItem key={level} value={level}>
                         {level.charAt(0).toUpperCase() + level.slice(1)}
                       </SelectItem>
@@ -199,15 +170,15 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="stage">Project Stage</Label>
-                <Select 
-                  value={projectData.stage} 
+                <Select
+                  value={projectData.stage}
                   onValueChange={(value) => handleSelectChange('stage', value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select stage" />
                   </SelectTrigger>
                   <SelectContent>
-                    {(isLoadingStages ? PROJECT_STAGES : stages).map(stage => (
+                    {stages.map(stage => (
                       <SelectItem key={stage} value={stage}>
                         {stage.charAt(0).toUpperCase() + stage.slice(1)}
                       </SelectItem>

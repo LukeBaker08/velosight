@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -14,13 +13,19 @@ interface DropdownValue {
   value: string;
   description: string | null;
   sort_order: number | null;
+  color: string | null;
 }
 
-interface CategoryWithValues {
+export interface DropdownValueWithColor {
+  value: string;
+  color: string | null;
+}
+
+export interface CategoryWithValues {
   id: string;
   name: string;
   description: string | null;
-  values: string[];
+  values: DropdownValueWithColor[];
 }
 
 export const useAllDropdownCategories = () => {
@@ -32,8 +37,7 @@ export const useAllDropdownCategories = () => {
     try {
       setIsLoading(true);
       setError(null);
-      
-      // Fetch categories
+
       const { data: categoriesData, error: categoriesError } = await supabase
         .from('dropdown_categories')
         .select('*')
@@ -41,7 +45,6 @@ export const useAllDropdownCategories = () => {
 
       if (categoriesError) throw categoriesError;
 
-      // Fetch values
       const { data: valuesData, error: valuesError } = await supabase
         .from('dropdown_values')
         .select('*')
@@ -49,14 +52,16 @@ export const useAllDropdownCategories = () => {
 
       if (valuesError) throw valuesError;
 
-      // Combine categories with their values
       const categoriesWithValues: CategoryWithValues[] = (categoriesData || []).map(category => ({
         id: category.id,
         name: category.name,
         description: category.description,
         values: (valuesData || [])
-          .filter(value => value.category_id === category.id)
-          .map(value => value.value)
+          .filter((value: DropdownValue) => value.category_id === category.id)
+          .map((value: DropdownValue) => ({
+            value: value.value,
+            color: value.color,
+          }))
       }));
 
       setCategories(categoriesWithValues);
@@ -72,10 +77,10 @@ export const useAllDropdownCategories = () => {
     fetchCategories();
   }, []);
 
-  const updateCategoryValues = (categoryId: string, newValues: string[]) => {
-    setCategories(prev => 
-      prev.map(category => 
-        category.id === categoryId 
+  const updateCategoryValues = (categoryId: string, newValues: DropdownValueWithColor[]) => {
+    setCategories(prev =>
+      prev.map(category =>
+        category.id === categoryId
           ? { ...category, values: newValues }
           : category
       )

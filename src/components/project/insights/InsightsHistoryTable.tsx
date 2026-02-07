@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { formatDate } from '@/utils/dateUtils';
+import { getConfidenceBadgeVariant, getStatusBadgeVariant } from '@/lib/badge-helpers';
 
 interface InsightsHistoryTableProps {
   analysisHistory: AnalysisResult[];
@@ -163,30 +164,6 @@ const InsightsHistoryTable: React.FC<InsightsHistoryTableProps> = ({
     }
   };
 
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status) {
-      case 'final':
-        return 'default';
-      case 'draft':
-        return 'secondary';
-      default:
-        return 'outline';
-    }
-  };
-
-  // Helper function to get confidence badge variant
-  const getConfidenceBadgeVariant = (confidence: string | number | null) => {
-    if (!confidence) return "outline";
-    
-    // Convert to string if it's a number
-    const confidenceStr = typeof confidence === 'string' ? confidence : String(confidence);
-    const confidenceLower = confidenceStr.toLowerCase();
-    
-    if (confidenceLower.includes('high') || confidenceLower.includes('good')) return "confidence-high";
-    if (confidenceLower.includes('medium') || confidenceLower.includes('satisfactory')) return "confidence-medium";
-    if (confidenceLower.includes('low') || confidenceLower.includes('poor')) return "confidence-low";
-    return "outline";
-  };
 
   // Helper function to get rating badge variant - updated for Gateway Review and Risk Analysis ratings
   const getRatingBadgeVariant = (rating: string | number | null, analysisType: string) => {

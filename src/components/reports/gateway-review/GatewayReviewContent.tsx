@@ -10,6 +10,7 @@ import UnifiedProjectInfoCards from '../common/UnifiedProjectInfoCards';
 import SelfAwarenessSection from '../common/SelfAwarenessSection';
 import ProjectContextSection from '../common/ProjectContextSection';
 import { Shield, Lightbulb } from 'lucide-react';
+import { extractModelUsed } from '../common/helpers';
 
 interface GatewayReviewContentProps {
   analysis: AnalysisResult | null;
@@ -123,6 +124,9 @@ const GatewayReviewContent: React.FC<GatewayReviewContentProps> = ({ analysis, p
       <div>
         {project && analysis && (
           <p className="text-sm text-muted-foreground mt-1 mb-4">
+            {extractModelUsed(analysis.raw_result) && (
+              <span>Model: {extractModelUsed(analysis.raw_result)} | </span>
+            )}
             Last updated: {format(new Date(analysis.created_at), 'dd MMM yyyy, HH:mm')}
           </p>
         )}

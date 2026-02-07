@@ -28,6 +28,16 @@ export interface TriangulatedContext {
 }
 
 /**
+ * Per-category retrieval settings
+ */
+export interface RetrievalSettings {
+  framework_topk: number;
+  context_topk: number;
+  project_topk: number;
+  sentiment_topk: number;
+}
+
+/**
  * Search project documents by category
  */
 export async function searchProjectDocuments(
@@ -132,22 +142,43 @@ export async function searchFrameworkMaterials(
 }
 
 /**
+ * Default retrieval settings
+ */
+export const DEFAULT_RETRIEVAL_SETTINGS: RetrievalSettings = {
+  framework_topk: 5,
+  context_topk: 5,
+  project_topk: 5,
+  sentiment_topk: 5
+};
+
+/**
  * Retrieve context from all 4 sources for triangulation
  * This is the main function used by the analysis system
+ *
+ * @param projectId Project ID to search within
+ * @param query Search query
+ * @param settings Optional per-category retrieval settings (defaults to 5 per category)
  */
 export async function retrieveTriangulatedContext(
   projectId: string,
   query: string,
-  topKPerCategory: number = 3
+  settings?: Partial<RetrievalSettings>
 ): Promise<TriangulatedContext> {
-  console.log(`[Retrieval] Fetching triangulated context for: "${query.substring(0, 50)}..."`);
+  // Merge with defaults
+  const retrievalSettings: RetrievalSettings = {
+    ...DEFAULT_RETRIEVAL_SETTINGS,
+    ...settings
+  };
 
-  // Search all 4 sources in parallel
+  console.log(`[Retrieval] Fetching triangulated context for: "${query.substring(0, 50)}..."`);
+  console.log(`[Retrieval] Settings: framework=${retrievalSettings.framework_topk}, context=${retrievalSettings.context_topk}, project=${retrievalSettings.project_topk}, sentiment=${retrievalSettings.sentiment_topk}`);
+
+  // Search all 4 sources in parallel with individual topK values
   const [framework, context, project, sentiment] = await Promise.all([
-    searchFrameworkMaterials(query, topKPerCategory),
-    searchProjectDocuments(projectId, query, 'context', topKPerCategory),
-    searchProjectDocuments(projectId, query, 'project', topKPerCategory),
-    searchProjectDocuments(projectId, query, 'sentiment', topKPerCategory)
+    searchFrameworkMaterials(query, retrievalSettings.framework_topk),
+    searchProjectDocuments(projectId, query, 'context', retrievalSettings.context_topk),
+    searchProjectDocuments(projectId, query, 'project', retrievalSettings.project_topk),
+    searchProjectDocuments(projectId, query, 'sentiment', retrievalSettings.sentiment_topk)
   ]);
 
   console.log(`[Retrieval] Complete: framework=${framework.length}, context=${context.length}, project=${project.length}, sentiment=${sentiment.length}`);

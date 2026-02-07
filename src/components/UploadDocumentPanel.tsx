@@ -1,17 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from 'sonner';
-import { DocumentCategory, DocumentType } from '@/types/project';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { uploadDocument } from '@/lib/file-operations';
 import { validateFile, sanitizeInput } from '@/lib/validators';
 import { handleError, getErrorMessage } from '@/lib/errors';
 import { DOCUMENT_CONFIG } from '@/lib/constants';
+import { useDropdownValues } from '@/hooks/useDropdownValues';
+import { Skeleton } from '@/components/ui/skeleton';
+
+type DocumentCategory = 'project' | 'context' | 'sentiment';
 
 interface UploadDocumentPanelProps {
   projectId: string;
@@ -19,35 +22,75 @@ interface UploadDocumentPanelProps {
   existingDocument?: {
     id: string;
     name: string;
-    type: DocumentType;
-    category: DocumentCategory;
+    type: string;
+    category: string;
     file_path?: string;
   };
   mode?: 'create' | 'edit';
 }
 
-const UploadDocumentPanel: React.FC<UploadDocumentPanelProps> = ({ 
-  projectId, 
-  onSuccess, 
+const UploadDocumentPanel: React.FC<UploadDocumentPanelProps> = ({
+  projectId,
+  onSuccess,
   existingDocument,
   mode = 'create'
 }) => {
   const { user } = useAuth();
   const [file, setFile] = useState<File | null>(null);
-  const [documentType, setDocumentType] = useState<DocumentType>(existingDocument?.type || 'other');
-  const [category, setCategory] = useState<DocumentCategory>(existingDocument?.category || 'project');
+  const [documentType, setDocumentType] = useState<string>(existingDocument?.type || '');
+  const [category, setCategory] = useState<DocumentCategory>(
+    (existingDocument?.category as DocumentCategory) || 'project'
+  );
   const [name, setName] = useState(existingDocument?.name || '');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  
+
+  // Fetch document types from database based on category
+  const { values: projectDocTypes, isLoading: projectLoading } = useDropdownValues('%project%document%type%');
+  const { values: contextDocTypes, isLoading: contextLoading } = useDropdownValues('%context%document%type%');
+  const { values: sentimentDocTypes, isLoading: sentimentLoading } = useDropdownValues('%sentiment%document%type%');
+
+  // Get the appropriate document types based on selected category
+  const getDocTypesForCategory = () => {
+    switch (category) {
+      case 'project':
+        return projectDocTypes.length > 0 ? projectDocTypes : ['Other'];
+      case 'context':
+        return contextDocTypes.length > 0 ? contextDocTypes : ['Other'];
+      case 'sentiment':
+        return sentimentDocTypes.length > 0 ? sentimentDocTypes : ['Other'];
+      default:
+        return ['Other'];
+    }
+  };
+
+  const docTypes = getDocTypesForCategory();
+  const isLoadingTypes = category === 'project' ? projectLoading :
+                         category === 'context' ? contextLoading :
+                         sentimentLoading;
+
+  // Reset document type when category changes
+  useEffect(() => {
+    if (!existingDocument) {
+      setDocumentType('');
+    }
+  }, [category, existingDocument]);
+
+  // Set default document type once types are loaded
+  useEffect(() => {
+    if (!isLoadingTypes && docTypes.length > 0 && !documentType) {
+      setDocumentType(docTypes[0]);
+    }
+  }, [isLoadingTypes, docTypes, documentType]);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
-      
+
       try {
         validateFile(selectedFile);
         setFile(selectedFile);
-        
+
         if (!name && mode === 'create') {
           setName(selectedFile.name);
         }
@@ -63,6 +106,12 @@ const UploadDocumentPanel: React.FC<UploadDocumentPanelProps> = ({
       toast.error('Please select a file to upload');
       return;
     }
+
+    if (!documentType) {
+      toast.error('Please select a document type');
+      return;
+    }
+
     const trimmedName = name.trim();
     try {
       setIsUploading(true);
@@ -85,7 +134,7 @@ const UploadDocumentPanel: React.FC<UploadDocumentPanelProps> = ({
 
       // Reset form
       setFile(null);
-      setDocumentType('other');
+      setDocumentType('');
       setCategory('project');
       setName('');
       setUploadProgress(0);
@@ -102,33 +151,11 @@ const UploadDocumentPanel: React.FC<UploadDocumentPanelProps> = ({
     }
   };
 
-  const projectDocTypes: DocumentType[] = [
-    'assurance-report',
-    'planning-document',
-    'risk-assessment',
-    'governance-document',
-    'environment-scan',
-    'other'
-  ];
+  // Format document type for display (convert kebab-case to Title Case)
+  const formatDocType = (type: string) => {
+    return type.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  };
 
-  const contextDocTypes: DocumentType[] = [
-    'org-chart',
-    'strategic-plan',
-    'environment-scan',
-    'other'
-  ];
-  
-  const sentimentDocTypes: DocumentType[] = [
-    'meeting-notes',
-    'survey-results',
-    'feedback',
-    'other'
-  ];
-  
-  const docTypes = category === 'project' ? projectDocTypes : 
-                   category === 'context' ? contextDocTypes : 
-                   sentimentDocTypes;
-  
   return (
     <div className="space-y-4 py-2">
       <div className="grid gap-2">
@@ -181,47 +208,54 @@ const UploadDocumentPanel: React.FC<UploadDocumentPanelProps> = ({
 
       <div className="space-y-2">
         <Label>Document Category</Label>
-        <RadioGroup 
-          value={category} 
+        <RadioGroup
+          value={category}
           onValueChange={(value) => {
             setCategory(value as DocumentCategory);
-            setDocumentType('other');
+            setDocumentType(''); // Reset type when category changes
           }}
-          className="flex gap-4"
+          className="flex flex-wrap gap-4"
         >
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="project" id="project" />
-            <Label htmlFor="project">Project Document</Label>
+            <Label htmlFor="project" className="cursor-pointer">Project</Label>
           </div>
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="context" id="context" />
-            <Label htmlFor="context">Context Document</Label>
+            <Label htmlFor="context" className="cursor-pointer">Context</Label>
           </div>
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="sentiment" id="sentiment" />
-            <Label htmlFor="sentiment">Sentiment Document</Label>
+            <Label htmlFor="sentiment" className="cursor-pointer">Sentiment</Label>
           </div>
         </RadioGroup>
       </div>
-      
+
       <div className="grid gap-2">
         <Label htmlFor="document-type">Document Type</Label>
-        <Select value={documentType} onValueChange={(value) => setDocumentType(value as DocumentType)}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select document type" />
-          </SelectTrigger>
-          <SelectContent>
-            {docTypes.map(type => (
-              <SelectItem key={type} value={type}>
-                {type.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {isLoadingTypes ? (
+          <Skeleton className="h-10 w-full" />
+        ) : (
+          <Select
+            value={documentType}
+            onValueChange={setDocumentType}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select document type" />
+            </SelectTrigger>
+            <SelectContent>
+              {docTypes.map(type => (
+                <SelectItem key={type} value={type}>
+                  {formatDocType(type)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
-      
+
       <div className="flex justify-end pt-4">
-        <Button onClick={handleSubmit} disabled={isUploading}>
+        <Button onClick={handleSubmit} disabled={isUploading || isLoadingTypes || !documentType}>
           {isUploading ? (mode === 'edit' ? 'Updating...' : 'Uploading...') : (mode === 'edit' ? 'Update Document' : 'Upload Document')}
         </Button>
       </div>

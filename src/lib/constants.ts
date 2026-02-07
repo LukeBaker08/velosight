@@ -1,27 +1,93 @@
 /**
- * Application-wide constants and configuration values.
- * Centralizes all constant values used throughout the application for consistency and maintainability.
+ * Application-wide constants and configuration.
+ * Single source of truth — replaces the former config.ts and constants.ts split.
  */
 
+import { supabase } from '@/integrations/supabase/client';
 
-
-
-
-// API Configuration
+// ---------------------------------------------------------------------------
+// API
+// ---------------------------------------------------------------------------
 export const API_CONFIG = {
   TIMEOUT: 10000,
   TIMEOUT_LONG: 120000, // 2 minutes – for LLM generation calls
   RETRY_ATTEMPTS: 3,
-} as const;
-
-// Document Configuration
-export const DOCUMENT_CONFIG = {
   MAX_FILE_SIZE: 10 * 1024 * 1024, // 10MB
-  ALLOWED_TYPES: ['pdf', 'doc', 'docx', 'txt', 'xlsx', 'xls'] as const,
-  CATEGORIES: ['project', 'contract', 'specification', 'report', 'other'] as const,
 } as const;
 
-// Analysis Types
+// ---------------------------------------------------------------------------
+// Application
+// ---------------------------------------------------------------------------
+export const APP_CONFIG = {
+  NAME: 'VeloSight',
+  VERSION: '1.0.0',
+  DESCRIPTION: 'Project delivery confidence assessment platform',
+
+  FEATURES: {
+    ANALYTICS: true,
+    DEBUG_MODE: import.meta.env.DEV,
+    ERROR_REPORTING: true,
+  },
+
+  UI: {
+    DEFAULT_PAGE_SIZE: 20,
+    TOAST_DURATION: 5000,
+    LOADING_DELAY: 200, // ms before showing loading spinner
+  },
+
+  UPLOAD: {
+    MAX_SIZE: 10 * 1024 * 1024, // 10MB (mirrors API_CONFIG.MAX_FILE_SIZE)
+    ALLOWED_TYPES: ['pdf', 'doc', 'docx', 'txt', 'xlsx', 'xls', 'pptx'] as const,
+    CHUNK_SIZE: 1024 * 1024, // 1MB chunks for large files
+  },
+
+  CACHE: {
+    USER_SESSION_TTL: 30 * 60 * 1000,  // 30 minutes
+    PROJECT_DATA_TTL: 5 * 60 * 1000,   // 5 minutes
+    ANALYSIS_DATA_TTL: 10 * 60 * 1000, // 10 minutes
+  },
+} as const;
+
+// ---------------------------------------------------------------------------
+// Documents
+// ---------------------------------------------------------------------------
+export const DOCUMENT_CONFIG = {
+  MAX_FILE_SIZE: API_CONFIG.MAX_FILE_SIZE,
+  ALLOWED_TYPES: ['pdf', 'doc', 'docx', 'txt', 'xlsx', 'xls', 'pptx'] as const,
+
+  CATEGORIES: {
+    PROJECT: 'project',
+    CONTEXT: 'context',
+    SENTIMENT: 'sentiment',
+  } as const,
+
+  TYPES: {
+    PROJECT: [
+      'assurance-report',
+      'planning-document',
+      'risk-assessment',
+      'governance-document',
+      'environment-scan',
+      'other',
+    ],
+    CONTEXT: [
+      'org-chart',
+      'strategic-plan',
+      'environment-scan',
+      'other',
+    ],
+    SENTIMENT: [
+      'meeting-notes',
+      'survey-results',
+      'feedback',
+      'other',
+    ],
+  } as const,
+} as const;
+
+// ---------------------------------------------------------------------------
+// Analysis
+// ---------------------------------------------------------------------------
 export const ANALYSIS_TYPES = {
   DELIVERY_CONFIDENCE: 'delivery-confidence-assessment',
   RISK_ASSESSMENT: 'risk-assessment',
@@ -30,31 +96,70 @@ export const ANALYSIS_TYPES = {
   CUSTOM: 'custom-analysis',
 } as const;
 
-// User Roles
+export const ANALYSIS_CONFIG = {
+  TYPES: ANALYSIS_TYPES,
+
+  STATUS: {
+    DRAFT: 'draft',
+    FINAL: 'final',
+  } as const,
+
+  CONFIDENCE_LEVELS: ['low', 'medium', 'high', 'very-high'] as const,
+} as const;
+
+// ---------------------------------------------------------------------------
+// Users
+// ---------------------------------------------------------------------------
 export const USER_ROLES = {
   ADMIN: 'admin',
   USER: 'user',
   AUTHENTICATED: 'authenticated',
 } as const;
 
-// Project Stages
-import { supabase } from '@/integrations/supabase/client';
+export const USER_CONFIG = {
+  ROLES: USER_ROLES,
+} as const;
 
+// ---------------------------------------------------------------------------
+// Validation
+// ---------------------------------------------------------------------------
+export const VALIDATION_CONFIG = {
+  PROJECT: {
+    NAME_MIN_LENGTH: 3,
+    NAME_MAX_LENGTH: 100,
+    CLIENT_MIN_LENGTH: 2,
+    CLIENT_MAX_LENGTH: 100,
+    DESCRIPTION_MAX_LENGTH: 500,
+  },
+
+  PASSWORD: {
+    MIN_LENGTH: 8,
+    REQUIRE_UPPERCASE: true,
+    REQUIRE_LOWERCASE: true,
+    REQUIRE_NUMBERS: true,
+    REQUIRE_SPECIAL: false,
+  },
+
+  FILE: {
+    NAME_MAX_LENGTH: 255,
+    PATH_MAX_LENGTH: 500,
+  },
+} as const;
+
+// ---------------------------------------------------------------------------
+// Project Stages (dynamic from DB, with fallback)
+// ---------------------------------------------------------------------------
 export const DEFAULT_PROJECT_STAGES = [
   'Planning',
   'Contestability',
   'Prioritisation',
   'Implementation',
-  'Closure'
+  'Closure',
 ] as const;
 
-/**
- * Fetch project stages from dropdown tables in Supabase.
- * Returns string[] or falls back to DEFAULT_PROJECT_STAGES on error.
- */
+/** Fetch project stages from dropdown tables. Falls back to DEFAULT_PROJECT_STAGES. */
 export async function fetchProjectStages(): Promise<string[]> {
   try {
-    // Try to find a category whose name includes 'stage'
     const { data: cats, error: catErr } = await supabase
       .from('dropdown_categories')
       .select('id, name')
@@ -81,7 +186,6 @@ export async function fetchProjectStages(): Promise<string[]> {
     }
 
     if (!values || values.length === 0) return Array.from(DEFAULT_PROJECT_STAGES);
-
     return (values as any[]).map(v => v.value as string);
   } catch (err) {
     console.error('Unexpected error fetching project stages:', err);
@@ -89,17 +193,15 @@ export async function fetchProjectStages(): Promise<string[]> {
   }
 }
 
-// Backwards-compatible synchronous fallback used in UI when async fetch isn't available
+/** Synchronous fallback for UI that can't await */
 export const PROJECT_STAGES = DEFAULT_PROJECT_STAGES;
 
-// Risk Levels
-// Risk Levels (dynamic + fallback)
+// ---------------------------------------------------------------------------
+// Risk Levels (dynamic from DB, with fallback)
+// ---------------------------------------------------------------------------
 export const DEFAULT_RISK_LEVELS = ['low', 'medium', 'high', 'critical'] as const;
 
-/**
- * Fetch risk levels from dropdown tables in Supabase.
- * Returns string[] or falls back to DEFAULT_RISK_LEVELS on error.
- */
+/** Fetch risk levels from dropdown tables. Falls back to DEFAULT_RISK_LEVELS. */
 export async function fetchRiskLevels(): Promise<string[]> {
   try {
     const { data: cats, error: catErr } = await supabase
@@ -128,7 +230,6 @@ export async function fetchRiskLevels(): Promise<string[]> {
     }
 
     if (!values || values.length === 0) return Array.from(DEFAULT_RISK_LEVELS);
-
     return (values as any[]).map(v => v.value as string);
   } catch (err) {
     console.error('Unexpected error fetching risk levels:', err);
@@ -136,5 +237,38 @@ export async function fetchRiskLevels(): Promise<string[]> {
   }
 }
 
-// Backwards-compatible synchronous fallback used in UI when async fetch isn't available
+/** Synchronous fallback for UI that can't await */
 export const RISK_LEVELS = DEFAULT_RISK_LEVELS;
+
+// ---------------------------------------------------------------------------
+// Project Configuration (static)
+// ---------------------------------------------------------------------------
+export const PROJECT_CONFIG = {
+  STAGES: DEFAULT_PROJECT_STAGES,
+  RISK_LEVELS: DEFAULT_RISK_LEVELS,
+} as const;
+
+// ---------------------------------------------------------------------------
+// Environment
+// ---------------------------------------------------------------------------
+export const ENV = {
+  IS_DEVELOPMENT: import.meta.env.DEV,
+  IS_PRODUCTION: import.meta.env.PROD,
+  IS_TEST: import.meta.env.MODE === 'test',
+} as const;
+
+// ---------------------------------------------------------------------------
+// Aggregated CONFIG export (for consumers that prefer a single import)
+// ---------------------------------------------------------------------------
+export const CONFIG = {
+  API: API_CONFIG,
+  APP: APP_CONFIG,
+  DOCUMENT: DOCUMENT_CONFIG,
+  ANALYSIS: ANALYSIS_CONFIG,
+  PROJECT: PROJECT_CONFIG,
+  USER: USER_CONFIG,
+  VALIDATION: VALIDATION_CONFIG,
+  ENV,
+} as const;
+
+export default CONFIG;

@@ -6,7 +6,7 @@ import RiskAssessmentContent from '@/components/reports/risk-assessment/RiskAsse
 
 const RiskAssessment = () => {
   return (
-    <ReportLayout title="Risk Assessment Report" analysisType="Risk Analysis">
+    <ReportLayout title="Risk Assessment Report" analysisType="Risk Analysis" reportTypeKey="risk-assessment">
       {(analysis, project) => (
         <RiskAssessmentContent analysis={analysis} project={project} />
       )}

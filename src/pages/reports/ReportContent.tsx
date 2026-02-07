@@ -7,6 +7,8 @@ import { Project } from '@/types/project';
 import { format } from 'date-fns';
 import { CircleGauge } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
+import { getConfidenceBadgeVariant } from '@/lib/badge-helpers';
+import { extractModelUsed } from '@/components/reports/common/helpers';
 
 interface ReportContentProps {
   analysis?: AnalysisResult | null;
@@ -89,19 +91,6 @@ const extractAnalysisData = (analysis: AnalysisResult | null) => {
   }
 };
 
-// Helper function to get confidence badge variant
-const getConfidenceBadgeVariant = (confidence: string | number | null) => {
-  if (!confidence) return "outline";
-  
-  // Convert to string if it's a number
-  const confidenceStr = typeof confidence === 'string' ? confidence : String(confidence);
-  const confidenceLower = confidenceStr.toLowerCase();
-  
-  if (confidenceLower.includes('high') || confidenceLower.includes('good')) return "confidence-high";
-  if (confidenceLower.includes('medium') || confidenceLower.includes('satisfactory')) return "confidence-medium";
-  if (confidenceLower.includes('low') || confidenceLower.includes('poor')) return "confidence-low";
-  return "outline";
-};
 
 // Helper function to get rating badge variant
 const getRatingBadgeVariant = (rating: string | number | null) => {
@@ -228,6 +217,11 @@ const ReportContent: React.FC<ReportContentProps> = ({ analysis, project }) => {
             <CardTitle className="text-sm font-medium text-muted-foreground">Last Updated</CardTitle>
           </CardHeader>
           <CardContent>
+            {extractModelUsed(analysis.raw_result) && (
+              <div className="text-xs text-muted-foreground mb-2">
+                Model: {extractModelUsed(analysis.raw_result)}
+              </div>
+            )}
             <div className="text-2xl font-bold">
               {format(new Date(analysis.created_at), 'dd MMM yyyy')}
             </div>

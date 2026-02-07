@@ -7,7 +7,7 @@ import UnifiedProjectInfoCards from '../common/UnifiedProjectInfoCards';
 import SelfAwarenessSection from '../common/SelfAwarenessSection';
 import ProjectContextSection from '../common/ProjectContextSection';
 import AssessmentSection from './AssessmentSection';
-import { extractDCAData } from '../common/helpers';
+import { extractDCAData, extractModelUsed } from '../common/helpers';
 
 interface DeliveryConfidenceContentProps {
   analysis: AnalysisResult | null;
@@ -42,6 +42,9 @@ const DeliveryConfidenceContent: React.FC<DeliveryConfidenceContentProps> = ({ a
       <div>
         {project && analysis && (
           <p className="text-sm text-muted-foreground mt-1 mb-4">
+            {extractModelUsed(analysis.raw_result) && (
+              <span>Model: {extractModelUsed(analysis.raw_result)} | </span>
+            )}
             Last updated: {format(new Date(analysis.created_at), 'dd MMM yyyy, HH:mm')}
           </p>
         )}

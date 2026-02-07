@@ -7,28 +7,32 @@ import React, { useState, useMemo, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
 } from '@/components/ui/table';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from '@/components/ui/select';
 import { Badge } from "@/components/ui/badge";
 import { Link } from 'react-router-dom';
 import { Filter, Search, SortAsc, SortDesc, Plus } from 'lucide-react';
 import { RiskLevel, Project } from '@/types/project';
-import { getAllProjects } from '@/services/projectService';
+import { getAllProjects } from '@/lib/project-service';
 import CreateProjectModal from '@/components/CreateProjectModal';
 import { useToast } from "@/hooks/use-toast";
+import { useProjectBadgeColors } from '@/hooks/useDropdownColors';
+import { getBadgeColorClasses } from '@/lib/badge-helpers';
+import { Skeleton } from '@/components/ui/skeleton';
+import { NoProjectsEmpty, NoResultsEmpty } from '@/components/ui/empty-state';
 
 type SortField = 'name' | 'client' | 'last_updated' | 'risk_level' | 'stage';
 type SortOrder = 'asc' | 'desc';
@@ -48,6 +52,7 @@ const Projects = () => {
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [showModal, setShowModal] = useState(false);
   const { toast } = useToast();
+  const { getStageColor, getRiskColor } = useProjectBadgeColors();
 
   // Fetch projects from Supabase
   useEffect(() => {
@@ -70,20 +75,6 @@ const Projects = () => {
 
     fetchProjects();
   }, [toast]);
-
-  /**
-   * Returns appropriate CSS classes for risk level badges
-   * @param risk - Risk level string (low, medium, high)
-   * @returns CSS class string for badge styling
-   */
-  const getRiskBadgeColor = (risk: string) => {
-    switch(risk) {
-      case 'high': return 'bg-red-100 text-red-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'low': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
 
 /**
  * Formats date/datetime string to user-friendly date
@@ -131,18 +122,18 @@ const formatDate = (dateString: string): string => {
   const filteredAndSortedProjects = useMemo(() => {
     return projects
       .filter(project => {
-        const matchesSearch = 
-          project.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        const matchesSearch =
+          project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
           project.client.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesRisk = riskFilter === 'all' || project.riskLevel === riskFilter;
         const matchesStage = stageFilter === 'all' || project.stage === stageFilter;
         const matchesClient = clientFilter === 'all' || project.client === clientFilter;
-        
+
         return matchesSearch && matchesRisk && matchesStage && matchesClient;
       })
       .sort((a, b) => {
         let comparison = 0;
-        
+
         if (sortField === 'name') {
           comparison = a.name.localeCompare(b.name);
         } else if (sortField === 'client') {
@@ -155,7 +146,7 @@ const formatDate = (dateString: string): string => {
         } else if (sortField === 'stage') {
           comparison = (a.stage || '').localeCompare(b.stage || '');
         }
-        
+
         return sortOrder === 'asc' ? comparison : -comparison;
       });
   }, [projects, searchTerm, riskFilter, stageFilter, clientFilter, sortField, sortOrder]);
@@ -172,7 +163,7 @@ const formatDate = (dateString: string): string => {
     <Layout>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold tracking-tight">Projects</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Projects</h1>
           <Button onClick={() => setShowModal(true)}>
             <Plus className="mr-2 h-4 w-4" /> New Project
           </Button>
@@ -192,55 +183,50 @@ const formatDate = (dateString: string): string => {
             </div>
           </div>
 
-          <div className="flex flex-col md:flex-row gap-2 md:ml-auto">
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-muted-foreground" />
-              <Select value={clientFilter} onValueChange={setClientFilter}>
-                <SelectTrigger className="w-[150px]">
-                  <SelectValue placeholder="Filter by client" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Clients</SelectItem>
-                  {uniqueClients.map(client => (
-                    <SelectItem key={client} value={client}>
-                      {client}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <div className="flex flex-col md:flex-row items-center gap-2 md:ml-auto">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Filter className="h-4 w-4" />
+              <span className="hidden md:inline">Filters:</span>
             </div>
+            <Select value={clientFilter} onValueChange={setClientFilter}>
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="Client" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Clients</SelectItem>
+                {uniqueClients.map(client => (
+                  <SelectItem key={client} value={client}>
+                    {client}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-muted-foreground" />
-              <Select value={riskFilter} onValueChange={setRiskFilter}>
-                <SelectTrigger className="w-[150px]">
-                  <SelectValue placeholder="Filter by risk" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Risk Levels</SelectItem>
-                  <SelectItem value="low">Low Risk</SelectItem>
-                  <SelectItem value="medium">Medium Risk</SelectItem>
-                  <SelectItem value="high">High Risk</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <Select value={riskFilter} onValueChange={setRiskFilter}>
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="Risk Level" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Risk Levels</SelectItem>
+                <SelectItem value="low">Low Risk</SelectItem>
+                <SelectItem value="medium">Medium Risk</SelectItem>
+                <SelectItem value="high">High Risk</SelectItem>
+              </SelectContent>
+            </Select>
 
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-muted-foreground" />
-              <Select value={stageFilter} onValueChange={setStageFilter}>
-                <SelectTrigger className="w-[150px]">
-                  <SelectValue placeholder="Filter by stage" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Stages</SelectItem>
-                  {uniqueStages.map(stage => (
-                    <SelectItem key={stage} value={stage}>
-                      {stage.charAt(0).toUpperCase() + stage.slice(1)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <Select value={stageFilter} onValueChange={setStageFilter}>
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="Stage" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Stages</SelectItem>
+                {uniqueStages.map(stage => (
+                  <SelectItem key={stage} value={stage}>
+                    {stage.charAt(0).toUpperCase() + stage.slice(1)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -292,15 +278,29 @@ const formatDate = (dateString: string): string => {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
-                    Loading projects...
-                  </TableCell>
-                </TableRow>
+                [...Array(5)].map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><Skeleton className="h-4 w-3/4" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-6 w-16 rounded-full" /></TableCell>
+                    <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                  </TableRow>
+                ))
               ) : filteredAndSortedProjects.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
-                    No projects found.
+                  <TableCell colSpan={5} className="h-48">
+                    {searchTerm || riskFilter !== 'all' || stageFilter !== 'all' || clientFilter !== 'all' ? (
+                      <NoResultsEmpty searchTerm={searchTerm} />
+                    ) : (
+                      <NoProjectsEmpty
+                        action={
+                          <Button onClick={() => setShowModal(true)}>
+                            <Plus className="mr-2 h-4 w-4" /> Create Project
+                          </Button>
+                        }
+                      />
+                    )}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -313,11 +313,21 @@ const formatDate = (dateString: string): string => {
                     </TableCell>
                     <TableCell>{project.client}</TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={getRiskBadgeColor(project.riskLevel || '')}>
+                      <Badge
+                        variant="outline"
+                        className={getBadgeColorClasses(getRiskColor(project.riskLevel))}
+                      >
                         {project.riskLevel ? project.riskLevel.charAt(0).toUpperCase() + project.riskLevel.slice(1) : 'N/A'}
                       </Badge>
                     </TableCell>
-                    <TableCell className="capitalize">{project.stage || 'N/A'}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={getBadgeColorClasses(getStageColor(project.stage))}
+                      >
+                        {project.stage ? project.stage.charAt(0).toUpperCase() + project.stage.slice(1) : 'N/A'}
+                      </Badge>
+                    </TableCell>
                     <TableCell>{formatDate(project.updated_at)}</TableCell>
                   </TableRow>
                 ))
@@ -327,10 +337,10 @@ const formatDate = (dateString: string): string => {
         </div>
       </div>
 
-      <CreateProjectModal 
-        isOpen={showModal} 
-        onClose={() => setShowModal(false)} 
-        onCreateProject={handleProjectCreated} 
+      <CreateProjectModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        onCreateProject={handleProjectCreated}
       />
     </Layout>
   );

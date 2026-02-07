@@ -14,7 +14,7 @@ interface HypothesisContentProps {
   project: Project | null;
 }
 
-import { extractAnalysisData, getConfidenceBadgeVariant } from '../common/helpers';
+import { extractAnalysisData, getConfidenceBadgeVariant, extractModelUsed } from '../common/helpers';
 import SelfAwarenessSection from '../common/SelfAwarenessSection';
 import ProjectContextSection from '../common/ProjectContextSection';
 import UnifiedProjectInfoCards from '../common/UnifiedProjectInfoCards';
@@ -47,6 +47,9 @@ const HypothesisContent: React.FC<HypothesisContentProps> = ({ analysis, project
       <div>
         {project && analysis && (
           <p className="text-sm text-muted-foreground mt-1 mb-4">
+            {extractModelUsed(analysis.raw_result) && (
+              <span>Model: {extractModelUsed(analysis.raw_result)} | </span>
+            )}
             Last updated: {format(new Date(analysis.created_at), 'dd MMM yyyy, HH:mm')}
           </p>
         )}

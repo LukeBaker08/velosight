@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProjectHeader from '@/components/project/ProjectHeader';
@@ -9,7 +9,7 @@ import ProjectDocuments from '@/components/project/ProjectDocuments';
 import ProjectInsights from '@/components/project/ProjectInsights';
 import PromptPanel from '@/components/PromptPanel';
 import AnalysisTiles from '@/components/project/AnalysisTiles';
-import { getProjectById } from '@/services/projectService';
+import { getProjectById } from '@/lib/project-service';
 import { Project as ProjectType } from '@/types/project';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from '@/integrations/supabase/client';
@@ -19,12 +19,20 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useForm } from "react-hook-form";
-import { PROJECT_STAGES, RISK_LEVELS, fetchProjectStages, fetchRiskLevels } from '@/lib/constants';
+import { useDropdownValues } from '@/hooks/useDropdownValues';
+import { PageSkeleton } from '@/components/ui/skeleton';
+import { EmptyState } from '@/components/ui/empty-state';
+import { FileX } from 'lucide-react';
 
 const Project = () => {
   const { id } = useParams<{ id: string }>();
-  const [activeTab, setActiveTab] = useState('overview');
+  const [searchParams] = useSearchParams();
+
+  // Get initial tab from URL param, default to 'overview'
+  const initialTab = searchParams.get('tab') || 'overview';
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [analysisResults, setAnalysisResults] = useState<any>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [project, setProject] = useState<ProjectType | null>(null);
@@ -32,10 +40,8 @@ const Project = () => {
   const { toast } = useToast();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [stages, setStages] = useState<string[]>(PROJECT_STAGES as unknown as string[]);
-  const [riskLevels, setRiskLevels] = useState<string[]>(RISK_LEVELS as unknown as string[]);
-  const [isLoadingStages, setIsLoadingStages] = useState(false);
-  const [isLoadingRiskLevels, setIsLoadingRiskLevels] = useState(false);
+  const { values: stages } = useDropdownValues('%stage%');
+  const { values: riskLevels } = useDropdownValues('%Risk%');
   
   // Form for editing project
   const form = useForm({
@@ -90,31 +96,6 @@ const Project = () => {
     };
 
     fetchProject();
-    // Also load dropdown lists for stages and risk levels
-    let mounted = true;
-    (async () => {
-      try {
-        setIsLoadingStages(true);
-        const s = await fetchProjectStages();
-        if (mounted && s && s.length > 0) setStages(s);
-      } catch (e) {
-        console.warn('Failed to load project stages', e);
-      } finally {
-        setIsLoadingStages(false);
-      }
-
-      try {
-        setIsLoadingRiskLevels(true);
-        const r = await fetchRiskLevels();
-        if (mounted && r && r.length > 0) setRiskLevels(r);
-      } catch (e) {
-        console.warn('Failed to load risk levels', e);
-      } finally {
-        setIsLoadingRiskLevels(false);
-      }
-    })();
-
-    return () => { mounted = false; };
   }, [id, toast, form]);
   
   // Handler for when analysis completes
@@ -260,9 +241,9 @@ const Project = () => {
         name: data.name,
         description: data.engagementOverview,
         client: data.client,
-        riskLevel: data.riskLevel,
+        risk_level: data.riskLevel,
         stage: data.stage,
-        lastUpdated: new Date().toISOString()
+        updated_at: new Date().toISOString()
       });
       
       // Show success message
@@ -289,19 +270,24 @@ const Project = () => {
   if (isLoading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-64">
-          <h2 className="text-xl font-semibold">Loading project...</h2>
-        </div>
+        <PageSkeleton />
       </Layout>
     );
   }
-  
+
   if (!project) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-64">
-          <h2 className="text-xl font-semibold">Project not found</h2>
-        </div>
+        <EmptyState
+          icon={FileX}
+          title="Project not found"
+          description="The project you're looking for doesn't exist or has been deleted."
+          action={
+            <Button variant="outline" onClick={() => window.history.back()}>
+              Go Back
+            </Button>
+          }
+        />
       </Layout>
     );
   }
@@ -324,27 +310,27 @@ const Project = () => {
         <ProjectMetrics project={project} />
         
         <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full md:w-[600px] grid-cols-4">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="documents">Documents</TabsTrigger>
-            <TabsTrigger value="analysis">Analysis</TabsTrigger>
-            <TabsTrigger value="insights">Insights</TabsTrigger>
+          <TabsList className="inline-flex h-10 w-full md:w-auto flex-wrap md:flex-nowrap">
+            <TabsTrigger value="overview" className="flex-1 md:flex-none">Overview</TabsTrigger>
+            <TabsTrigger value="documents" className="flex-1 md:flex-none">Documents</TabsTrigger>
+            <TabsTrigger value="analysis" className="flex-1 md:flex-none">Analysis</TabsTrigger>
+            <TabsTrigger value="insights" className="flex-1 md:flex-none">Insights</TabsTrigger>
           </TabsList>
-          
-          <TabsContent value="overview" className="space-y-4 mt-6">
+
+          <TabsContent value="overview" className="space-y-6 mt-6">
             <ProjectOverview project={project} />
           </TabsContent>
-          
-          <TabsContent value="documents" className="space-y-4 mt-6">
+
+          <TabsContent value="documents" className="space-y-6 mt-6">
             {id && <ProjectDocuments projectId={id} />}
           </TabsContent>
-          
+
           <TabsContent value="analysis" className="space-y-6 mt-6">
             <AnalysisTiles onAnalysisComplete={handleQuickAnalysis} setIsProcessing={setIsProcessing} />
             <PromptPanel onAnalysisComplete={handleAnalysisComplete} />
           </TabsContent>
-          
-          <TabsContent value="insights" className="mt-6">
+
+          <TabsContent value="insights" className="space-y-6 mt-6">
             <ProjectInsights onAnalyzeClick={() => setActiveTab('analysis')} analysisResults={analysisResults} />
           </TabsContent>
         </Tabs>
@@ -393,37 +379,45 @@ const Project = () => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Risk Level</FormLabel>
-                        <FormControl>
-                          <select
-                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2"
-                            {...field}
-                          >
-                            {(isLoadingRiskLevels ? RISK_LEVELS : riskLevels).map(level => (
-                              <option key={level} value={level}>{level.charAt(0).toUpperCase() + level.slice(1)}</option>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select risk level" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {riskLevels.map(level => (
+                              <SelectItem key={level} value={level}>
+                                {level.charAt(0).toUpperCase() + level.slice(1)}
+                              </SelectItem>
                             ))}
-                          </select>
-                        </FormControl>
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
                     name="stage"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Project Stage</FormLabel>
-                        <FormControl>
-                          <select
-                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2"
-                            {...field}
-                          >
-                            {(isLoadingStages ? PROJECT_STAGES : stages).map(stage => (
-                              <option key={stage} value={stage}>{stage.charAt(0).toUpperCase() + stage.slice(1)}</option>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select stage" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {stages.map(stage => (
+                              <SelectItem key={stage} value={stage}>
+                                {stage.charAt(0).toUpperCase() + stage.slice(1)}
+                              </SelectItem>
                             ))}
-                          </select>
-                        </FormControl>
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}

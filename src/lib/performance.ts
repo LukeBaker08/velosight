@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import { CONFIG } from './config';
+import { CONFIG } from './constants';
 import { handleError } from './errors';
 
 interface PerformanceMetric {

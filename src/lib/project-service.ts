@@ -45,13 +45,13 @@ export const getAllProjects = async (): Promise<Project[]> => {
 /**
  * Get recent projects (last 5)
  */
-export const getRecentProjects = async (): Promise<Project[]> => {
+export const getRecentProjects = async (limit: number = 5): Promise<Project[]> => {
   try {
     const { data, error } = await supabase
       .from('projects')
       .select('*')
       .order('updated_at', { ascending: false })
-      .limit(5);
+      .limit(limit);
 
     if (error) {
       throw new NetworkError(`Failed to fetch recent projects: ${error.message}`);
@@ -143,8 +143,6 @@ export const updateProject = async (
       validateProject({
         name: updates.name || '',
         client: updates.client || '',
-        stage: updates.stage,
-        riskLevel: updates.risk_level
       });
     }
 

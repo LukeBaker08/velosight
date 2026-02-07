@@ -12,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { getConfidenceBadgeVariant } from '@/lib/badge-helpers';
 
 interface InsightsContentProps {
   content: string;
@@ -137,19 +138,6 @@ const getAnalysisRoute = (analysisType: string) => {
   }
 };
 
-// Helper function to get confidence badge variant
-const getConfidenceBadgeVariant = (confidence: string | number | null) => {
-  if (!confidence) return "outline";
-  
-  // Convert to string if it's a number
-  const confidenceStr = typeof confidence === 'string' ? confidence : String(confidence);
-  const confidenceLower = confidenceStr.toLowerCase();
-  
-  if (confidenceLower.includes('high') || confidenceLower.includes('good')) return "confidence-high";
-  if (confidenceLower.includes('medium') || confidenceLower.includes('satisfactory')) return "confidence-medium";
-  if (confidenceLower.includes('low') || confidenceLower.includes('poor')) return "confidence-low";
-  return "outline";
-};
 
 // Helper function to get rating badge variant
 const getRatingBadgeVariant = (rating: string | number | null) => {
@@ -516,8 +504,8 @@ const InsightsContent: React.FC<InsightsContentProps> = ({
       </Table>
 
       {wordTemplate && (
-        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-          <p className="text-sm text-blue-700">
+        <div className="mt-4 p-3 bg-primary/10 border border-primary/20 rounded-md">
+          <p className="text-sm text-primary">
             Template loaded: <span className="font-medium">{wordTemplate.name}</span> ({(wordTemplate.size / 1024).toFixed(1)} KB)
           </p>
         </div>

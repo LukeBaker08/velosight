@@ -8,6 +8,7 @@ const Hypothesis: React.FC = () => {
     <ReportLayout
       title="Hypothesis Report"
       analysisType="Hypothesis"
+      reportTypeKey="hypothesis"
     >
       {(analysis, project) => (
         <HypothesisContent analysis={analysis} project={project} />

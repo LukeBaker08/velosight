@@ -47,8 +47,8 @@ const UploadAssuranceMaterialPanel: React.FC<UploadAssuranceMaterialPanelProps> 
   );
   
   // Use values from database, fallback to default values if category not found
-  const availableCategories = frameworkMaterialCategory?.values?.length > 0 
-    ? frameworkMaterialCategory.values 
+  const availableCategories = frameworkMaterialCategory?.values?.length > 0
+    ? frameworkMaterialCategory.values.map(v => typeof v === 'string' ? v : v.value)
     : ['Framework', 'Governance', 'Checklist', 'Template', 'Reference', 'Other'];
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
