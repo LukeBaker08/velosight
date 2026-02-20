@@ -12,6 +12,12 @@ dist
 dist-ssr
 *.local
 
+# Environment files (keep secrets out of repo)
+.env
+.env.*
+!.env.example
+.env.production.local
+
 # Python
 __pycache__
 *.pyc

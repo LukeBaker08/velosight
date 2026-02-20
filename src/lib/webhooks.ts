@@ -2,6 +2,7 @@
 
 import { handleError, NetworkError } from './errors';
 import { API_CONFIG } from './constants';
+import { supabase } from '@/integrations/supabase/client';
 
 interface WebhookResponse<T = any> {
   success: boolean;
@@ -23,15 +24,22 @@ export const callWebhook = async <T = any>(
   const timeoutId = setTimeout(() => controller.abort(), timeout);
 
   try {
+    // Get current session for auth token
+    const { data: { session } } = await supabase.auth.getSession();
+    const authHeader = session?.access_token
+      ? { Authorization: `Bearer ${session.access_token}` }
+      : {};
+
     const isFormData = options.body instanceof FormData;
 
     const response = await fetch(url, {
       ...options,
       signal: controller.signal,
       headers: isFormData
-        ? options.headers // ✅ let browser set Content-Type for FormData
+        ? { ...authHeader, ...options.headers } // Include auth for FormData
         : {
             'Content-Type': 'application/json',
+            ...authHeader,
             ...options.headers,
           },
     });

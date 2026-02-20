@@ -284,7 +284,7 @@ const InsightsHistoryTable: React.FC<InsightsHistoryTableProps> = ({
               </TableCell>
               <TableCell>
                 <Badge variant={getStatusBadgeVariant(analysis.status)}>
-                  {analysis.status}
+                  {analysis.status.charAt(0).toUpperCase() + analysis.status.slice(1)}
                 </Badge>
               </TableCell>
               <TableCell>

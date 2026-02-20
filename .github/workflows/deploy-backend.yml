@@ -1,0 +1,76 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'server/**'
+      - 'shared/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/deploy-backend.yml'
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Image tag to deploy'
+        required: false
+        default: 'latest'
+
+env:
+  AZURE_RESOURCE_GROUP: rg-velosight-prod
+  CONTAINER_APP_NAME: ca-velosight-backend-prod
+  ACR_NAME: acrvelosightprod
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set image tag
+        id: vars
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "IMAGE_TAG=${{ github.event.inputs.image_tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "IMAGE_TAG=${{ github.sha }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Login to Azure Container Registry
+        run: |
+          az acr login --name ${{ env.ACR_NAME }}
+
+      - name: Build and push Docker image
+        run: |
+          docker build -f server/Dockerfile -t ${{ env.ACR_NAME }}.azurecr.io/velosight-backend:${{ steps.vars.outputs.IMAGE_TAG }} .
+          docker tag ${{ env.ACR_NAME }}.azurecr.io/velosight-backend:${{ steps.vars.outputs.IMAGE_TAG }} ${{ env.ACR_NAME }}.azurecr.io/velosight-backend:latest
+          docker push ${{ env.ACR_NAME }}.azurecr.io/velosight-backend:${{ steps.vars.outputs.IMAGE_TAG }}
+          docker push ${{ env.ACR_NAME }}.azurecr.io/velosight-backend:latest
+
+      - name: Deploy to Container Apps
+        run: |
+          az containerapp update \
+            --name ${{ env.CONTAINER_APP_NAME }} \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --image ${{ env.ACR_NAME }}.azurecr.io/velosight-backend:${{ steps.vars.outputs.IMAGE_TAG }}
+
+      - name: Verify deployment
+        run: |
+          # Get the FQDN
+          FQDN=$(az containerapp show \
+            --name ${{ env.CONTAINER_APP_NAME }} \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --query "properties.configuration.ingress.fqdn" -o tsv)
+
+          echo "Deployed to: https://$FQDN"
+
+          # Wait for deployment and check health
+          sleep 30
+          curl -f "https://$FQDN/health" || echo "Health check pending..."

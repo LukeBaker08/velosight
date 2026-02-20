@@ -11,14 +11,7 @@ import { validateProject, isValidUUID } from './validators';
  * Transform database project to frontend Project type
  */
 const transformProject = (dbProject: any): Project => {
-  // Create object with getters for backward compatibility
-  const project = {
-    ...dbProject,
-    get riskLevel() { return this.risk_level; },
-    get lastUpdated() { return this.updated_at; },
-    get documentsCount() { return this.documents_count; }
-  };
-  return project as Project;
+  return dbProject as Project;
 };
 
 /**

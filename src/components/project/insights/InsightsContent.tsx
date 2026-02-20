@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getConfidenceBadgeVariant } from '@/lib/badge-helpers';
+import { getConfidenceBadgeVariant, getRatingBadgeVariant } from '@/lib/badge-helpers';
 
 interface InsightsContentProps {
   content: string;
@@ -136,21 +136,6 @@ const getAnalysisRoute = (analysisType: string) => {
     default:
       return 'delivery-confidence-assessment'; // Default fallback
   }
-};
-
-
-// Helper function to get rating badge variant
-const getRatingBadgeVariant = (rating: string | number | null) => {
-  if (!rating) return "outline";
-  
-  // Convert to string if it's a number
-  const ratingStr = typeof rating === 'string' ? rating : String(rating);
-  const ratingLower = ratingStr.toLowerCase();
-  
-  if (ratingLower.includes('high') || ratingLower.includes('good') || ratingLower.includes('green')) return "confidence-high";
-  if (ratingLower.includes('medium') || ratingLower.includes('satisfactory') || ratingLower.includes('amber') || ratingLower.includes('yellow')) return "confidence-medium";
-  if (ratingLower.includes('low') || ratingLower.includes('poor') || ratingLower.includes('red')) return "confidence-low";
-  return "outline";
 };
 
 // Helper function to extract Risk Analysis data

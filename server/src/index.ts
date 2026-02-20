@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { documentsRouter } from './routes/documents.js';
 import { searchRouter } from './routes/search.js';
 import { analysisRouter } from './routes/analysis.js';
+import { requireAuth } from './middleware/auth.js';
 
 // Load environment variables
 dotenv.config({ path: '.env.local' });
@@ -20,13 +21,18 @@ console.log('- AZURE_SEARCH_ENDPOINT:', process.env.AZURE_SEARCH_ENDPOINT ? 'SET
 const app = express();
 const PORT = process.env.BACKEND_PORT || 3001;
 
-// Middleware - Allow requests from common dev ports
+// CORS Configuration
+// Development origins + production URLs
 const allowedOrigins = [
+  // Development
   'http://localhost:5173',
   'http://localhost:8080',
   'http://localhost:3000',
+  // Production
+  'https://velosight.fidere.au',
+  // Dynamic from environment (for staging, etc.)
   process.env.FRONTEND_URL
-].filter(Boolean);
+].filter(Boolean) as string[];
 
 app.use(cors({
   origin: (origin, callback) => {
@@ -43,15 +49,15 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Health check
+// Health check (no auth required)
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'VeloSight Document Processing API' });
 });
 
-// Routes
-app.use('/api/documents', documentsRouter);
-app.use('/api/search', searchRouter);
-app.use('/api/analysis', analysisRouter);
+// Protected routes - require Supabase JWT authentication
+app.use('/api/documents', requireAuth, documentsRouter);
+app.use('/api/search', requireAuth, searchRouter);
+app.use('/api/analysis', requireAuth, analysisRouter);
 
 // Error handling
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

@@ -14,7 +14,7 @@ interface ProjectCardProps {
 }
 
 const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
-  const [documentsCount, setDocumentsCount] = useState(project.documentsCount);
+  const [documentsCount, setDocumentsCount] = useState(project.documents_count);
   const { getStageColor, getRiskColor } = useProjectBadgeColors();
 
   // Fetch actual document count from the database
@@ -47,7 +47,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
-  const riskColor = getRiskColor(project.riskLevel);
+  const riskColor = getRiskColor(project.risk_level);
   const stageColor = getStageColor(project.stage);
 
   return (
@@ -66,12 +66,12 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
             <span>Updated {formatDate(project.updated_at)}</span>
           </div>
           <div className="flex flex-wrap gap-2">
-            {project.riskLevel && (
+            {project.risk_level && (
               <Badge
                 variant="outline"
                 className={`px-2.5 py-1 ${getBadgeColorClasses(riskColor)}`}
               >
-                {project.riskLevel.charAt(0).toUpperCase() + project.riskLevel.slice(1)} Risk
+                {project.risk_level.charAt(0).toUpperCase() + project.risk_level.slice(1)} Risk
               </Badge>
             )}
             {project.stage && (

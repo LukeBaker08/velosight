@@ -28,7 +28,7 @@ import { Filter, Search, SortAsc, SortDesc, Plus } from 'lucide-react';
 import { RiskLevel, Project } from '@/types/project';
 import { getAllProjects } from '@/lib/project-service';
 import CreateProjectModal from '@/components/CreateProjectModal';
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 import { useProjectBadgeColors } from '@/hooks/useDropdownColors';
 import { getBadgeColorClasses } from '@/lib/badge-helpers';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -125,7 +125,7 @@ const formatDate = (dateString: string): string => {
         const matchesSearch =
           project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
           project.client.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesRisk = riskFilter === 'all' || project.riskLevel === riskFilter;
+        const matchesRisk = riskFilter === 'all' || project.risk_level === riskFilter;
         const matchesStage = stageFilter === 'all' || project.stage === stageFilter;
         const matchesClient = clientFilter === 'all' || project.client === clientFilter;
 
@@ -139,10 +139,10 @@ const formatDate = (dateString: string): string => {
         } else if (sortField === 'client') {
           comparison = a.client.localeCompare(b.client);
         } else if (sortField === 'last_updated') {
-          comparison = new Date(a.lastUpdated).getTime() - new Date(b.lastUpdated).getTime();
+          comparison = new Date(a.updated_at || '').getTime() - new Date(b.updated_at || '').getTime();
         } else if (sortField === 'risk_level') {
           const riskOrder: Record<string, number> = { low: 1, medium: 2, high: 3 };
-          comparison = (riskOrder[a.riskLevel as string] || 0) - (riskOrder[b.riskLevel as string] || 0);
+          comparison = (riskOrder[a.risk_level as string] || 0) - (riskOrder[b.risk_level as string] || 0);
         } else if (sortField === 'stage') {
           comparison = (a.stage || '').localeCompare(b.stage || '');
         }
@@ -315,9 +315,9 @@ const formatDate = (dateString: string): string => {
                     <TableCell>
                       <Badge
                         variant="outline"
-                        className={getBadgeColorClasses(getRiskColor(project.riskLevel))}
+                        className={getBadgeColorClasses(getRiskColor(project.risk_level))}
                       >
-                        {project.riskLevel ? project.riskLevel.charAt(0).toUpperCase() + project.riskLevel.slice(1) : 'N/A'}
+                        {project.risk_level ? project.risk_level.charAt(0).toUpperCase() + project.risk_level.slice(1) : 'N/A'}
                       </Badge>
                     </TableCell>
                     <TableCell>

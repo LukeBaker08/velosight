@@ -61,24 +61,33 @@ velosight/
 │   ├── hooks/                     # Custom React hooks
 │   ├── context/                   # React context providers (AuthContext)
 │   ├── lib/                       # Core business logic & utilities
+│   ├── services/                  # Service modules (export)
 │   ├── types/                     # TypeScript type definitions
-│   ├── utils/                     # Utility functions
 │   └── integrations/
 │       └── supabase/              # Supabase client & auto-generated types
 │
 ├── server/                        # Backend (Express API)
 │   └── src/
 │       ├── index.ts               # Server entry (port 3001)
+│       ├── middleware/
+│       │   └── auth.ts            # Supabase JWT authentication middleware
 │       ├── routes/
 │       │   ├── analysis.ts        # /api/analysis – run analysis, manage types
 │       │   ├── documents.ts       # /api/documents – upload, vectorize, delete
 │       │   └── search.ts          # /api/search – semantic search
-│       └── services/
-│           ├── azure-openai.ts    # Azure OpenAI client
-│           ├── azure-search.ts    # Azure AI Search client
-│           ├── generation.ts      # RAG → LLM generation pipeline
-│           ├── processing.ts      # Document chunking & embedding
-│           └── retrieval.ts       # Semantic retrieval with category filtering
+│       ├── services/
+│       │   ├── azure-openai.ts    # Azure OpenAI client
+│       │   ├── azure-search.ts    # Azure AI Search client
+│       │   ├── generation.ts      # RAG → LLM generation pipeline
+│       │   ├── processing.ts      # Document chunking & embedding
+│       │   └── retrieval.ts       # Semantic retrieval with category filtering
+│       └── utils/
+│           └── odata.ts           # OData filter escaping utilities
+│
+├── shared/                        # Shared utilities (frontend & backend)
+│   ├── textExtraction.ts          # Document text extraction
+│   ├── chunking.ts                # Text chunking for embeddings
+│   └── index.ts                   # Barrel exports
 │
 ├── supabase/
 │   ├── migrations/                # SQL migrations (pgvector, indexes, tables)
@@ -102,11 +111,14 @@ velosight/
 | `src/components/reports/` | Report rendering components per analysis type |
 | `src/components/knowledge/` | Knowledge repository UI (materials, prompt library) |
 | `src/components/settings/` | Analysis parameter editor, dropdown category editor, user management |
-| `src/lib/` | Analysis routing, constants, errors, file operations, performance, project CRUD, validators |
-| `src/hooks/` | Data-fetching hooks (dropdown categories, dropdown values, colors, users) |
+| `src/lib/` | Analysis routing, constants, errors, file operations, performance, project CRUD, validators, webhooks |
+| `src/hooks/` | React Query hooks (useProjects), dropdown categories, dropdown values, colors, users |
 | `src/context/AuthContext.tsx` | Authentication state and role management |
+| `server/src/middleware/` | Express middleware (Supabase JWT authentication) |
 | `server/src/routes/` | REST API endpoints for analysis, documents, and search |
 | `server/src/services/` | Azure OpenAI, Azure Search, document processing, RAG pipeline |
+| `server/src/utils/` | Utility functions (OData filter escaping) |
+| `shared/` | Shared utilities used by both frontend and backend |
 | `supabase/migrations/` | Database schema migrations |
 
 ---
@@ -211,11 +223,13 @@ Migrations live in `supabase/migrations/` and include:
 
 ## Security
 
-- Supabase Auth with JWT and Row Level Security (RLS) policies
-- Input validation and sanitization (`src/lib/validators.ts`)
-- File upload restrictions (type whitelist, 10 MB max)
-- Centralized error handling (`src/lib/errors.ts`)
-- Service role key used only on the backend (never exposed to the client)
+- **Authentication** – Supabase Auth with JWT; backend Express routes protected by JWT middleware (`server/src/middleware/auth.ts`)
+- **Authorization** – Row Level Security (RLS) policies on all Supabase tables
+- **Input validation** – Sanitization and validation (`src/lib/validators.ts`)
+- **OData injection prevention** – Parameterised filters for Azure AI Search queries (`server/src/utils/odata.ts`)
+- **File upload restrictions** – Type whitelist (PDF, DOCX, TXT, XLSX, PPTX), 10 MB max
+- **Centralized error handling** – `src/lib/errors.ts`
+- **Service role key** – Used only on the backend (never exposed to the client)
 
 ---
 

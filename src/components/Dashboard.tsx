@@ -3,18 +3,19 @@
  * Dashboard component that provides the main landing page with quick actions and recent projects.
  * Displays navigation cards for core features and shows recently updated projects.
  */
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { Link } from 'react-router-dom';
 import ProjectCard from './ProjectCard';
 import { ArrowRight, FilePlus, Book, Folder, Settings } from 'lucide-react';
 import { Button } from './ui/button';
-import { Project } from '@/types/project';
-import { getRecentProjects } from '@/lib/project-service';
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
+import { useRecentProjects } from "@/hooks/useProjects";
 import CreateProjectModal from './CreateProjectModal';
 import { ProjectCardSkeleton } from './ui/skeleton';
 import { NoProjectsEmpty } from './ui/empty-state';
+import { usePermissions } from '@/hooks/usePermissions';
+import { RoleBadge } from './RoleBadge';
 
 interface DashboardProps {
   onNewProject: () => void;
@@ -26,58 +27,53 @@ interface DashboardProps {
  * @returns JSX element with dashboard layout and content
  */
 const Dashboard: React.FC<DashboardProps> = ({ onNewProject }) => {
-  const [recentProjects, setRecentProjects] = useState<Project[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const { toast } = useToast();
-  
+  const { canCreateProject, isReadOnly } = usePermissions();
+
+  // Use React Query for data fetching - replaces manual useState/useEffect
+  const { data: recentProjects = [], isLoading, error } = useRecentProjects(3);
+
+  // Show error toast if fetch fails
   useEffect(() => {
-    const fetchRecentProjects = async () => {
-      try {
-        setIsLoading(true);
-        const data = await getRecentProjects(3);
-        setRecentProjects(data);
-      } catch (error) {
-        console.error('Error fetching recent projects:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load recent projects. Please try again.',
-          variant: 'destructive'
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    if (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to load recent projects. Please try again.',
+        variant: 'destructive'
+      });
+    }
+  }, [error, toast]);
 
-    fetchRecentProjects();
-  }, [toast]);
-
-  /**
-   * Handles successful project creation by updating the recent projects list
-   * @param newProject - The newly created project to add to recent projects
-   */
-  const handleProjectCreated = (newProject: Project) => {
-    setRecentProjects(prev => [newProject, ...prev.slice(0, 2)]); // Keep only the 3 most recent
-  };
+  // Note: handleProjectCreated is no longer needed - React Query
+  // automatically invalidates and refetches when mutations occur
   
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
-        <p className="text-muted-foreground">Here's an overview of your projects and recent activities.</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
+          <p className="text-muted-foreground">
+            Here's an overview of your projects and recent activities.
+            {isReadOnly && <span className="ml-2 text-xs">(Read-only access)</span>}
+          </p>
+        </div>
+        <RoleBadge />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Card
-          className="bg-primary/5 hover:bg-primary/10 border-border/50 transition-colors cursor-pointer h-full"
-          onClick={() => setShowModal(true)}
-        >
-          <div className="p-6 flex flex-col items-center justify-center text-center h-full">
-            <FilePlus className="h-8 w-8 mb-3 text-primary" />
-            <h3 className="font-medium">New Project</h3>
-            <p className="text-sm text-muted-foreground mt-1">Create a new project</p>
-          </div>
-        </Card>
+        {canCreateProject && (
+          <Card
+            className="bg-primary/5 hover:bg-primary/10 border-border/50 transition-colors cursor-pointer h-full"
+            onClick={() => setShowModal(true)}
+          >
+            <div className="p-6 flex flex-col items-center justify-center text-center h-full">
+              <FilePlus className="h-8 w-8 mb-3 text-primary" />
+              <h3 className="font-medium">New Project</h3>
+              <p className="text-sm text-muted-foreground mt-1">Create a new project</p>
+            </div>
+          </Card>
+        )}
         <Link to="/projects" className="block">
           <Card className="bg-primary/5 hover:bg-primary/10 border-border/50 transition-colors cursor-pointer h-full">
             <div className="p-6 flex flex-col items-center justify-center text-center h-full">
@@ -142,10 +138,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onNewProject }) => {
         </div>
       </div>
 
-      <CreateProjectModal 
-        isOpen={showModal} 
+      <CreateProjectModal
+        isOpen={showModal}
         onClose={() => setShowModal(false)}
-        onCreateProject={handleProjectCreated}
+        onCreateProject={() => {}} // React Query auto-refetches via cache invalidation
       />
     </div>
   );

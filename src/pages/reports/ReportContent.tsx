@@ -7,7 +7,7 @@ import { Project } from '@/types/project';
 import { format } from 'date-fns';
 import { CircleGauge } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
-import { getConfidenceBadgeVariant } from '@/lib/badge-helpers';
+import { getConfidenceBadgeVariant, getRatingBadgeVariant, extractConfidencePercentage } from '@/lib/badge-helpers';
 import { extractModelUsed } from '@/components/reports/common/helpers';
 
 interface ReportContentProps {
@@ -89,50 +89,6 @@ const extractAnalysisData = (analysis: AnalysisResult | null) => {
       rating: analysis.rating 
     };
   }
-};
-
-
-// Helper function to get rating badge variant
-const getRatingBadgeVariant = (rating: string | number | null) => {
-  if (!rating) return "outline";
-  
-  // Convert to string if it's a number
-  const ratingStr = typeof rating === 'string' ? rating : String(rating);
-  const ratingLower = ratingStr.toLowerCase();
-  
-  if (ratingLower.includes('high') || ratingLower.includes('good')) return "confidence-high";
-  if (ratingLower.includes('medium') || ratingLower.includes('satisfactory')) return "confidence-medium";
-  if (ratingLower.includes('low') || ratingLower.includes('poor')) return "confidence-low";
-  return "outline";
-};
-
-// Helper function to extract confidence percentage
-const extractConfidencePercentage = (confidence: string | number | null): number => {
-  if (!confidence) return 50;
-  
-  // If it's already a number, return it (capped at 100)
-  if (typeof confidence === 'number') {
-    return Math.min(confidence, 100);
-  }
-  
-  // Convert to string for processing
-  const confidenceStr = String(confidence);
-  
-  // Try to extract a percentage value if present
-  const percentMatch = confidenceStr.match(/(\d+)%/);
-  if (percentMatch && percentMatch[1]) {
-    return parseInt(percentMatch[1], 10);
-  }
-  
-  // Otherwise map confidence levels to percentages
-  const confidenceLower = confidenceStr.toLowerCase();
-  if (confidenceLower.includes('very high') || confidenceLower.includes('excellent')) return 95;
-  if (confidenceLower.includes('high') || confidenceLower.includes('good')) return 80;
-  if (confidenceLower.includes('medium')) return 60;
-  if (confidenceLower.includes('low')) return 40;
-  if (confidenceLower.includes('very low') || confidenceLower.includes('poor')) return 20;
-  
-  return 50; // Default value
 };
 
 // Helper function to format markdown-like text for better display

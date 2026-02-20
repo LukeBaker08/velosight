@@ -9,11 +9,15 @@
     "dev:all": "concurrently \"npm run dev\" \"npm run dev:backend\"",
     "build": "vite build",
     "build:dev": "vite build --mode development",
+    "build:server": "echo 'Server runs with tsx - no build step required'",
+    "start:server": "NODE_ENV=production npx tsx server/src/index.ts",
     "lint": "eslint .",
     "preview": "vite preview",
     "analysis:test0": "cross-env DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config src/integrations/analysis/testkit/run-once.ts",
     "analysis:test1": "cross-env DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config src/integrations/analysis/testkit/run-retrieval.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "docker:build": "docker build -f server/Dockerfile -t velosight-backend .",
+    "docker:run": "docker run -p 3001:3001 --env-file .env.local velosight-backend"
   },
   "dependencies": {
     "@azure/identity": "^4.13.0",

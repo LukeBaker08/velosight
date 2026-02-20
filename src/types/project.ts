@@ -8,7 +8,6 @@ export type RiskLevel = 'low' | 'medium' | 'high';
 
 /**
  * Main project interface representing a project entity
- * Includes backward compatibility getters for legacy property access patterns
  */
 export interface Project {
   id: string;
@@ -20,11 +19,6 @@ export interface Project {
   created_at: string;
   updated_at: string | null;
   documents_count: number | null;
-  
-  // Backward compatibility getters for legacy code
-  get riskLevel(): string | null;
-  get updatedAt(): string | null;
-  get documentsCount(): number | null;
 }
 
 /**

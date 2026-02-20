@@ -12,7 +12,7 @@ interface ProjectMetricsProps {
 }
 
 const ProjectMetrics: React.FC<ProjectMetricsProps> = ({ project }) => {
-  const [documentsCount, setDocumentsCount] = useState(project.documentsCount);
+  const [documentsCount, setDocumentsCount] = useState(project.documents_count);
   const { getStageColor, getRiskColor } = useProjectBadgeColors();
 
   // Fetch actual document count from the database
@@ -33,7 +33,7 @@ const ProjectMetrics: React.FC<ProjectMetricsProps> = ({ project }) => {
           setDocumentsCount(count);
 
           // Update the project's documents_count in the database if it's different
-          if (count !== project.documentsCount) {
+          if (count !== project.documents_count) {
             const { error: updateError } = await supabase
               .from('projects')
               .update({ documents_count: count })
@@ -50,10 +50,10 @@ const ProjectMetrics: React.FC<ProjectMetricsProps> = ({ project }) => {
     };
 
     fetchDocumentCount();
-  }, [project.id, project.documentsCount]);
+  }, [project.id, project.documents_count]);
 
   const stageColor = getStageColor(project.stage);
-  const riskColor = getRiskColor(project.riskLevel);
+  const riskColor = getRiskColor(project.risk_level);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -79,7 +79,7 @@ const ProjectMetrics: React.FC<ProjectMetricsProps> = ({ project }) => {
             variant="outline"
             className={`px-2.5 py-1 ${getBadgeColorClasses(riskColor)}`}
           >
-            {project.riskLevel.charAt(0).toUpperCase() + project.riskLevel.slice(1)}
+            {project.risk_level.charAt(0).toUpperCase() + project.risk_level.slice(1)}
           </Badge>
         </CardContent>
       </Card>

@@ -6,6 +6,20 @@
  * 2. Semantic/Analysis-based (confidence, risk ratings from LLM) — use variant helpers
  */
 
+/** Badge variant type matching the Badge component's variant prop */
+export type BadgeVariant =
+  | 'default'
+  | 'secondary'
+  | 'destructive'
+  | 'outline'
+  | 'confidence-high'
+  | 'confidence-medium'
+  | 'confidence-low'
+  | 'risk-critical'
+  | 'risk-high'
+  | 'risk-medium'
+  | 'risk-low';
+
 /** Available Tailwind colors for badge styling */
 export const BADGE_COLORS = [
   'blue',
@@ -45,7 +59,7 @@ export function getBadgeColorClasses(color: string | null | undefined): string {
  * Semantic confidence badge variant (for LLM outputs).
  * Maps strings like "High", "Medium", "Low" to badge variants.
  */
-export function getConfidenceBadgeVariant(confidence: string | number | null | undefined): string {
+export function getConfidenceBadgeVariant(confidence: string | number | null | undefined): BadgeVariant {
   if (!confidence) return 'outline';
   const str = String(confidence).toLowerCase();
   if (str.includes('high') || str.includes('good') || str.includes('excellent')) return 'confidence-high';
@@ -55,10 +69,23 @@ export function getConfidenceBadgeVariant(confidence: string | number | null | u
 }
 
 /**
+ * General rating badge variant (for overall ratings from LLM).
+ * Maps strings like "High", "Medium", "Low", "Good", "Poor", or colors to badge variants.
+ */
+export function getRatingBadgeVariant(rating: string | number | null | undefined): BadgeVariant {
+  if (!rating) return 'outline';
+  const str = String(rating).toLowerCase();
+  if (str.includes('high') || str.includes('good') || str.includes('excellent') || str.includes('green')) return 'confidence-high';
+  if (str.includes('medium') || str.includes('satisfactory') || str.includes('moderate') || str.includes('amber') || str.includes('yellow')) return 'confidence-medium';
+  if (str.includes('low') || str.includes('poor') || str.includes('red')) return 'confidence-low';
+  return 'outline';
+}
+
+/**
  * Semantic risk rating badge variant (for LLM outputs).
  * Maps strings like "Critical", "High", "Medium", "Low" to badge variants.
  */
-export function getRiskRatingBadgeVariant(risk: string | null | undefined): string {
+export function getRiskRatingBadgeVariant(risk: string | null | undefined): BadgeVariant {
   if (!risk) return 'outline';
   const str = risk.toLowerCase();
   if (str.includes('critical')) return 'risk-critical';
@@ -71,7 +98,7 @@ export function getRiskRatingBadgeVariant(risk: string | null | undefined): stri
 /**
  * Analysis status badge variant.
  */
-export function getStatusBadgeVariant(status: string | null | undefined): string {
+export function getStatusBadgeVariant(status: string | null | undefined): BadgeVariant {
   if (!status) return 'outline';
   if (status === 'final') return 'default';
   return 'secondary';
@@ -80,7 +107,7 @@ export function getStatusBadgeVariant(status: string | null | undefined): string
 /**
  * Priority badge variant (for recommendations).
  */
-export function getPriorityBadgeVariant(priority: string | null | undefined): string {
+export function getPriorityBadgeVariant(priority: string | null | undefined): BadgeVariant {
   if (!priority) return 'outline';
   const str = priority.toLowerCase();
   if (str.includes('high') || str.includes('critical') || str.includes('urgent')) return 'risk-high';
@@ -92,7 +119,7 @@ export function getPriorityBadgeVariant(priority: string | null | undefined): st
 /**
  * Assessment rating badge variant (for gateway reviews).
  */
-export function getAssessmentRatingBadgeVariant(rating: string | null | undefined): string {
+export function getAssessmentRatingBadgeVariant(rating: string | null | undefined): BadgeVariant {
   if (!rating) return 'outline';
   const str = rating.toLowerCase();
   if (str.includes('green') || str.includes('good') || str.includes('on track')) return 'confidence-high';

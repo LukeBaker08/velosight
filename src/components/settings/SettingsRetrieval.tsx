@@ -5,8 +5,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2, Save, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 const BACKEND_API_URL = import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:3001/api';
+
+const getAuthHeaders = async (): Promise<Record<string, string>> => {
+  const { data: { session } } = await supabase.auth.getSession();
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (session?.access_token) {
+    headers['Authorization'] = `Bearer ${session.access_token}`;
+  }
+  return headers;
+};
 
 interface RetrievalSettings {
   framework_topk: number;
@@ -36,7 +46,8 @@ const SettingsRetrieval: React.FC = () => {
   const fetchSettings = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`${BACKEND_API_URL}/analysis/settings/retrieval`);
+      const headers = await getAuthHeaders();
+      const response = await fetch(`${BACKEND_API_URL}/analysis/settings/retrieval`, { headers });
       const data = await response.json();
 
       if (data.success && data.data) {
@@ -54,9 +65,10 @@ const SettingsRetrieval: React.FC = () => {
   const handleSave = async () => {
     setIsSaving(true);
     try {
+      const headers = await getAuthHeaders();
       const response = await fetch(`${BACKEND_API_URL}/analysis/settings/retrieval`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(settings)
       });
 

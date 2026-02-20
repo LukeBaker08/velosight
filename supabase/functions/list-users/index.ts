@@ -33,57 +33,53 @@ serve(async (req) => {
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-    // Verify the JWT token and get the user
-    const supabaseAnon = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        headers: {
-          authorization: authHeader,
-        },
-      },
-    });
+    // Extract JWT token from Bearer header
+    const token = authHeader.replace('Bearer ', '');
 
-    const { data: { user }, error: authError } = await supabaseAnon.auth.getUser();
-    
-    if (authError || !user) {
-      console.log('Invalid token or user not found:', authError);
-      return new Response(
-        JSON.stringify({ error: 'Invalid authorization token' }),
-        { 
-          status: 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
-
-    console.log('User authenticated:', user.email);
-
-    // Check if user has admin or authenticated role in profiles table
-    const { data: profile, error: profileError } = await supabaseAnon
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single();
-
-    // if (profileError || !profile || (profile.role !== 'admin' && profile.role !== 'authenticated')) {
-    //   console.log('User does not have required role or profile not found:', profileError, profile);
-    //   return new Response(
-    //     JSON.stringify({ error: 'Access denied. Admin or authenticated role required.' }),
-    //     { 
-    //       status: 403, 
-    //       headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-    //     }
-    //   );
-    }
-
-    console.log('User is admin, proceeding to list users');
-
-    // Create admin client with service role key
+    // Create admin client with service role key (bypasses RLS)
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
       auth: {
         autoRefreshToken: false,
         persistSession: false
       }
     });
+
+    // Verify the JWT token and get the user using anon client
+    const supabaseAnon = createClient(supabaseUrl, supabaseAnonKey);
+    const { data: { user }, error: authError } = await supabaseAnon.auth.getUser(token);
+
+    if (authError || !user) {
+      console.log('Invalid token or user not found:', authError);
+      return new Response(
+        JSON.stringify({ error: 'Invalid authorization token' }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    console.log('User authenticated:', user.email);
+
+    // Check if user is a contributor using admin client (bypasses RLS)
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError || !profile || profile.role !== 'contributor') {
+      console.log('User does not have contributor role:', profileError, profile);
+      return new Response(
+        JSON.stringify({ error: 'Access denied. Contributor role required.' }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    console.log('User is contributor, proceeding to list users');
 
     // List all users using admin API
     const { data: userData, error: userError } = await supabaseAdmin.auth.admin.listUsers();

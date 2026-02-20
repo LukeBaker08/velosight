@@ -6,13 +6,13 @@ import type { AppUser } from '@/types/user';
 const FUNCTIONS_URL = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL;
 
 export const useUsers = () => {
-  const { user, isAdmin } = useAuth();
+  const { user, isContributor } = useAuth();
   const [users, setUsers] = useState<AppUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchUsers = useCallback(async () => {
-    if (!user || !isAdmin) {
+    if (!user || !isContributor) {
       setUsers([]);
       setIsLoading(false);
       setError(null);
@@ -40,7 +40,7 @@ export const useUsers = () => {
 
       if (!response.ok) {
         if (response.status === 403) {
-          setError('Access denied. Admin privileges required.');
+          setError('Access denied. Contributor role required.');
           return;
         }
         throw new Error(`HTTP ${response.status}`);
@@ -66,7 +66,7 @@ export const useUsers = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [user, isAdmin]);
+  }, [user, isContributor]);
 
   useEffect(() => {
     fetchUsers();

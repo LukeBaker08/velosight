@@ -11,7 +11,7 @@ import PromptPanel from '@/components/PromptPanel';
 import AnalysisTiles from '@/components/project/AnalysisTiles';
 import { getProjectById } from '@/lib/project-service';
 import { Project as ProjectType } from '@/types/project';
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from "@/components/ui/button";
 import { Pencil } from "lucide-react";
@@ -69,7 +69,7 @@ const Project = () => {
           name: projectData.name,
           engagementOverview: projectData.description,
           client: projectData.client,
-          riskLevel: projectData.riskLevel,
+          riskLevel: projectData.risk_level,
           stage: projectData.stage
         });
         

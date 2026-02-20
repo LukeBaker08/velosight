@@ -1,13 +1,23 @@
-
 # VeloSight Runtime Requirements
 
 ## Node.js
 Node.js >= 18.0.0
 
-## Supabase
+## Cloud Services
+
+### Supabase
 - Supabase project with Auth, Storage, and Edge Functions enabled
+- PostgreSQL database with pgvector extension
+
+### Azure
+- Azure OpenAI resource with:
+  - GPT-4o mini deployment (for analysis generation)
+  - text-embedding-3-small deployment (for document embeddings)
+- Azure AI Search resource (for vector search indexes)
 
 ## NPM Dependencies
+
+### Frontend & Shared
 @hookform/resolvers: ^3.9.0
 @radix-ui/react-accordion: ^1.2.0
 @radix-ui/react-alert-dialog: ^1.1.1
@@ -38,12 +48,11 @@ Node.js >= 18.0.0
 @radix-ui/react-tooltip: ^1.1.4
 @supabase/supabase-js: ^2.49.4
 @tanstack/react-query: ^5.56.2
-@types/uuid: ^10.0.0
 class-variance-authority: ^0.7.1
 clsx: ^2.1.1
 cmdk: ^1.0.0
 date-fns: ^3.6.0
-docx: ^9.5.0
+docx: ^9.5.1
 embla-carousel-react: ^8.3.0
 file-saver: ^2.0.5
 input-otp: ^1.2.4
@@ -61,23 +70,47 @@ tailwind-merge: ^2.5.2
 tailwindcss-animate: ^1.0.7
 uuid: ^11.1.0
 vaul: ^0.9.3
-zod: ^3.23.8
+zod: ^3.25.76
 
-## Dev Dependencies (for development only)
-@eslint/js: ^9.9.0
-@tailwindcss/typography: ^0.5.15
-@types/node: ^22.5.5
+### Backend (Express API)
+@azure/identity: ^4.13.0
+@azure/openai: ^2.0.0
+@azure/search-documents: ^12.2.0
+cors: ^2.8.6
+express: ^5.2.1
+jszip: ^3.10.1
+mammoth: ^1.11.0
+openai: ^6.17.0
+pdf-parse: ^2.4.5
+xlsx: ^0.18.5
+
+### Type Definitions
+@types/uuid: ^10.0.0
+@types/cors: ^2.8.19
+@types/express: ^5.0.6
+@types/file-saver: ^2.0.7
+@types/jszip: ^3.4.0
+@types/node: ^22.19.7
 @types/react: ^18.3.3
 @types/react-dom: ^18.3.0
+
+## Dev Dependencies
+@eslint/js: ^9.9.0
+@tailwindcss/typography: ^0.5.15
 @vitejs/plugin-react-swc: ^3.5.0
 autoprefixer: ^10.4.20
+concurrently: ^9.2.1
+cross-env: ^10.1.0
+dotenv: ^17.2.3
 eslint: ^9.9.0
 eslint-plugin-react-hooks: ^5.1.0-rc.0
 eslint-plugin-react-refresh: ^0.4.9
 globals: ^15.9.0
 lovable-tagger: ^1.1.7
+nodemon: ^3.1.11
 postcss: ^8.4.47
 tailwindcss: ^3.4.11
+tsx: ^4.21.0
 typescript: ^5.5.3
 typescript-eslint: ^8.0.1
 vite: ^5.4.1

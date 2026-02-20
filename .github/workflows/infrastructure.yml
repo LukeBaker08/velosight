@@ -1,0 +1,87 @@
+name: Deploy Infrastructure
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'infra/**'
+      - '.github/workflows/infrastructure.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'prod'
+        type: choice
+        options:
+          - prod
+          - staging
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    name: Validate Bicep
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Validate Bicep templates
+        run: |
+          az bicep build --file infra/main.bicep
+
+      - name: What-if deployment
+        run: |
+          az deployment sub what-if \
+            --location australiaeast \
+            --template-file infra/main.bicep \
+            --parameters infra/parameters.prod.json
+
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy Infrastructure
+    needs: validate
+    if: github.ref == 'refs/heads/main'
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy Bicep templates
+        run: |
+          az deployment sub create \
+            --location australiaeast \
+            --template-file infra/main.bicep \
+            --parameters infra/parameters.prod.json \
+            --name "velosight-infra-${{ github.run_number }}"
+
+      - name: Get deployment outputs
+        run: |
+          echo "## Infrastructure Deployment Outputs" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          OUTPUTS=$(az deployment sub show \
+            --name "velosight-infra-${{ github.run_number }}" \
+            --query "properties.outputs" -o json)
+
+          echo '```json' >> $GITHUB_STEP_SUMMARY
+          echo "$OUTPUTS" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY

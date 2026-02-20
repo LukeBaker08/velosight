@@ -1,8 +1,9 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { extractTextFromFile } from '../../../src/services/documents/textExtraction.js';
-import { chunkText } from '../../../src/services/rag/chunking.js';
+import { extractTextFromFile } from '../../../shared/textExtraction.js';
+import { chunkText } from '../../../shared/chunking.js';
 import { generateEmbedding } from './azure-openai.js';
 import { getSearchClient } from './azure-search.js';
+import { eqFilter } from '../utils/odata.js';
 
 /**
  * Storage configuration for each document category
@@ -151,9 +152,9 @@ export async function deleteDocument(documentId: string) {
   for (const indexName of indexes) {
     const searchClient = getSearchClient(indexName);
 
-    // Find all chunks for this document
+    // Find all chunks for this document (use safe OData escaping)
     const results = await searchClient.search("*", {
-      filter: `document_id eq '${documentId}'`,
+      filter: eqFilter('document_id', documentId),
       select: ["id"]
     });
 

@@ -146,7 +146,7 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, analysisType, report
               ) : (
                 <Download className="h-4 w-4 mr-2" />
               )}
-              Export to Word
+              Export
             </Button>
           )}
         </div>

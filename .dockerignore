@@ -1,0 +1,64 @@
+# Dependencies (will be installed fresh in container)
+node_modules
+**/node_modules
+
+# Build outputs (frontend - not needed in backend container)
+dist
+build
+
+# Environment files (secrets should come from Key Vault)
+.env
+.env.*
+!.env.example
+
+# Git
+.git
+.gitignore
+
+# IDE and editor
+.vscode
+.idea
+*.swp
+*.swo
+
+# Documentation
+*.md
+!README.md
+docs/
+
+# Tests
+**/*.test.ts
+**/*.spec.ts
+__tests__
+coverage
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local development
+supabase/.branches
+supabase/.temp
+
+# Frontend source (not needed for backend container)
+src/
+public/
+index.html
+
+# Scripts not needed in production
+scripts/
+
+# Infrastructure files
+infra/
+
+# GitHub workflows
+.github/
+
+# Misc
+*.tgz
+*.tar.gz
+.npmrc

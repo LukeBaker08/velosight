@@ -1,5 +1,6 @@
 import { getSearchClient } from './azure-search.js';
 import { generateEmbedding } from './azure-openai.js';
+import { eqFilter, andFilter } from '../utils/odata.js';
 
 /**
  * Search result from Azure AI Search
@@ -64,7 +65,7 @@ export async function searchProjectDocuments(
         fields: ['embedding']
       }]
     },
-    filter: `project_id eq '${projectId}' and category eq '${category}'`,
+    filter: andFilter([eqFilter('project_id', projectId), eqFilter('category', category)]),
     select: ['id', 'content', 'document_id', 'name', 'type', 'chunk_idx', 'chunk_count'],
     top: topK
   });
@@ -105,7 +106,7 @@ export async function searchFrameworkMaterials(
   const searchClient = getSearchClient('framework-vectors');
 
   // Build filter if type specified
-  const filter = type ? `type eq '${type}'` : undefined;
+  const filter = type ? eqFilter('type', type) : undefined;
 
   // Vector search
   const searchResults = await searchClient.search(query, {
